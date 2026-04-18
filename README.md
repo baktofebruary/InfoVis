@@ -2,24 +2,22 @@
 
 ## Info
 - The project is split into client/server folders
-- It is meant to be run from this directory, for example to run the server `python server/src/main.py`
-- client was vibe coded for now
+
 ## Requirements
 - **Python** 3.14
-- Dependencies listed in `requirements.txt`
-
-Install dependencies with:
+- Node js
+## Server
 ```bash
-pip install -r requirements.txt
-```
-
-<details>
-<summary>Recommended Setup</summary>
-
-```bash
+cd server
 python -m venv .venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+python src/main.py
 ```
-
+## Client
+```bash
+cd client
+npm i
+vite run dev # vite run build
+```
 </details>
