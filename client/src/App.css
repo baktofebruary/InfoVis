@@ -358,3 +358,20 @@
 	stroke: white;
 	stroke-width: 1;
 }
+
+.map-tooltip {
+	position: fixed;
+	z-index: 100;
+	pointer-events: none;
+	background: white;
+	border-radius: 5px;
+	padding: 0.4rem 0.5rem;
+	box-shadow: var(--shadow);
+	font-size: 0.85rem;
+}
+
+.map-tooltip-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+}

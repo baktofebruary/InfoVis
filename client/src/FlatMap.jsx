@@ -19,6 +19,7 @@ export default function FlatMap({
     const [hoveredCountry, setHoveredCountry] = useState(null);
     const [clickedCountry, setClickedCountry] = useState(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
+    const [tooltip, setTooltip] = useState(null);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -70,6 +71,14 @@ export default function FlatMap({
         return geoPath(projection);
     }, [projection]);
 
+    const tooltipYear = 2020;
+    const tooltipVariables = [...(pcaData?.variables || [])]
+        .sort((a, b) => a.key.length - b.key.length)
+        .slice(0, 8);
+    const tooltipValues = tooltip
+        ? pcaData?.country_values?.[tooltip.country] || {}
+        : {};
+    
     return (
         <div ref={containerRef} className="flat-map-stage">
             {size.width > 0 && size.height > 0 && pathGen && (
@@ -79,7 +88,7 @@ export default function FlatMap({
                     height={size.height}
                     viewBox={`0 0 ${size.width} ${size.height}`}
                 >
-                    
+                                    
                 <image
                     href={EARTH_TEXTURE_URL}
                     x={0}
@@ -129,13 +138,21 @@ export default function FlatMap({
                                     onClick={() => {
                                         onCountryClick?.(feature?.properties?.name || null);
                                     }}
-                                    onMouseMove={() => {
+                                    onMouseMove={(event) => {
+                                        const name = feature?.properties?.name || null;
                                         setHoveredCountry(feature);
-                                        onCountryHover?.(feature?.properties?.name || null);
+                                        onCountryHover?.(name);
+
+                                        setTooltip({
+                                        x: event.clientX,
+                                        y: event.clientY,
+                                        country: name,
+                                        });
                                     }}
                                     onMouseLeave={() => {
                                         setHoveredCountry(null);
                                         onCountryHover?.(null);
+                                        setTooltip(null);
                                     }}
                                 >
                                     <title>{feature?.properties?.name || 'Country'}</title>
@@ -143,7 +160,33 @@ export default function FlatMap({
                             );
                         })}
                 </svg>
+            
             )}
+            {tooltip && (
+                <div
+                    className="map-tooltip"
+                    style={{
+                    left: tooltip.x + 15,
+                    top: tooltip.y + 15,
+                    }}
+                >
+                    <strong>{tooltip.country}</strong>
+                    <div className="map-tooltip-year">
+                        Year: {tooltipYear}
+                    </div>
+                    {tooltipVariables.map((variable) => (
+                        <div key={variable.key} className="map-tooltip-row">
+                            <span>{variable.key}</span>
+                            <span>
+                            {tooltipValues[variable.key] !== undefined
+                                ? tooltipValues[variable.key].toFixed(2)
+                                : 'no data'}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+                )}
+
         </div>
     );
 }
