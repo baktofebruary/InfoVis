@@ -29,7 +29,6 @@ export default function LineChart(
     
     const y = scaleLinear()
     .domain([0, maxValue])
-    .nice()
     .range([bottomEdge, margin.top]);
 
     const yTicks = [...y.ticks(5), maxValue];
