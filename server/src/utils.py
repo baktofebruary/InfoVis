@@ -43,15 +43,44 @@ def get_pca_cords(data: pd.DataFrame):
     
     pca = PCA(n_components = 2)
     coords = pca.fit_transform(X_scaled)
-    
-    
+        
+    variables = []
+
+    for col in X.columns:
+        values = pd.to_numeric(data[col], errors="coerce")
+        valid_val = values.dropna()
+
+        if valid_val.empty:
+            continue
+            
+        variables.append({
+            'key': col,
+            'min': float(valid_val.min()),
+            'max': float(valid_val.max()),
+        })
+
+    country_values = {}
+
+    for _, row in data.iterrows():
+        metrics = {}
+
+        for variable in variables:
+            value = pd.to_numeric(row[variable['key']], errors="coerce")
+
+            if pd.notna(value):
+                metrics[variable["key"]] = float(value)
+
+    country_values[row["Country Name"]] = metrics   
+
     result = {
         "year": 2020,
         "countries": country_names.tolist(),
         "x": coords[:, 0].tolist(),
         "y": coords[:, 1].tolist(),
         "explained_variance": pca.explained_variance_ratio_.tolist(),
-        "feature_loadings": pca.components_.tolist()
+        "feature_loadings": pca.components_.tolist(),
+        "variables": variables,
+        "country_values": country_values,
     }
 
     return result
