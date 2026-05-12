@@ -1,4 +1,4 @@
-import { scaleLinear, max, line, format } from 'd3';
+import { scaleLinear, max, min, line, format } from 'd3';
 
 const width = 700;
 const height = 400;
@@ -21,6 +21,7 @@ export default function LineChart(
    
     const rightEdge = width - margin.right;
     const bottomEdge = height - margin.bottom;
+    const minValue = min(series, (d) => d.value) || 0;
     const maxValue = max(series, (d) => d.value) || 0;
 
     const x = scaleLinear()
@@ -28,16 +29,31 @@ export default function LineChart(
     .range([margin.left, rightEdge]);
     
     const y = scaleLinear()
-    .domain([0, maxValue])
+    .domain([Math.min(0, minValue), Math.max(0, maxValue)])
+    .nice()
     .range([bottomEdge, margin.top]);
 
-    const yTicks = [...y.ticks(5), maxValue];
+
+    const yTicks = y.ticks(5)
     const xTicks = x.ticks(5);
-    const formatValue = format(".2s");
+    const zeroY = y(0);
+    const xAxisY = Math.max(margin.top, Math.min(bottomEdge, zeroY));
+    const formatValue = (value) => {
+        if (Math.abs(value) < 1000) {
+            return value.toFixed(1);
+        }
+
+        if (Math.abs(value) >= 1000000000) {
+            return `${(value / 1000000000).toFixed(1)}B`;
+        }
+
+        return format(".2s")(value);
+    };
 
     const linePath = line()
         .x((d) => x(d.year))
         .y((d) => y(d.value))(series);
+    
 
   return (
     <div className="line-chart-panel">
@@ -47,9 +63,9 @@ export default function LineChart(
       <svg className="line-chart" viewBox={`0 0 ${width} ${height}`}>
         <line
             x1={margin.left}
-            y1={bottomEdge}
+            y1={xAxisY}
             x2={rightEdge}
-            y2={bottomEdge}
+            y2={xAxisY}
             className="line-chart-axis"
         />
 
@@ -65,9 +81,9 @@ export default function LineChart(
         <line
             key={`x-tick-${year}`}
             x1={x(year)}
-            y1={bottomEdge}
+            y1={xAxisY}
             x2={x(year)}
-            y2={bottomEdge + 5}
+            y2={xAxisY + 5}
             className="line-chart-axis"
         />
         ))}
