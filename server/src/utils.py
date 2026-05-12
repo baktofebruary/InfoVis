@@ -69,8 +69,7 @@ def get_pca_cords(data: pd.DataFrame):
 
             if pd.notna(value):
                 metrics[variable["key"]] = float(value)
-
-    country_values[row["Country Name"]] = metrics   
+        country_values[row["Country Name"]] = metrics   
 
     result = {
         "year": 2020,

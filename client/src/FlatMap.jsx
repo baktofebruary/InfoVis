@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo';
 import { filterCountriesForPca, normalizeCountry } from './lib/country';
+import {getCountryMetric, getVariableData, getCountryColorValue,} from './lib/mapColor';
 
 const EARTH_TEXTURE_URL = 'https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg';
 
@@ -8,7 +9,9 @@ export default function FlatMap({
     countryFeatures,
     pcaCountrySet,
     pcaHoveredCountry,
-    onCountryHover
+    onCountryHover,
+    pcaData,
+    selectedVariable,
 }) {
 
     const containerRef = useRef(null);
@@ -34,6 +37,11 @@ export default function FlatMap({
         [countryFeatures, pcaCountrySet]
     );
 
+    const selectedVariableData = useMemo(() => 
+        getVariableData(pcaData, selectedVariable),
+        [pcaData, selectedVariable]);
+
+   
     const isHighlighted = (feature) => {
         const countryName = feature?.properties?.name;
 
@@ -93,7 +101,12 @@ export default function FlatMap({
 
                         {visibleCountries.map((feature) => {
                             const isActive = isHighlighted(feature);
-
+                             const value = getCountryMetric(
+                                pcaData,
+                                feature?.properties?.name,
+                                selectedVariable
+                            );
+                            
                             return (
                                 <path
                                     key={feature.properties?.name}
@@ -103,7 +116,7 @@ export default function FlatMap({
                                     fill={
                                         isActive
                                             ? 'rgba(255, 72, 72, 0.68)'
-                                            : 'rgba(255, 255, 255, 0.30)'
+                                            : getCountryColorValue(value, selectedVariableData)
                                     }
                                     stroke={
                                         isActive

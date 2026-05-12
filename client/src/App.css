@@ -28,6 +28,14 @@
 	width: 100%;
 	height: 100%;
 	min-width: 0;
+	min-height: 0;
+}
+
+.map-area {
+	min-width: 0;
+	height: 100%;
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr);
 }
 
 .right-panel {
@@ -55,40 +63,44 @@
 	font-weight: 700;
 }
 
-.view-menu {
-	position: fixed;
-	top: 1rem;
-	left: 1rem;
-	z-index: 40;
+.variable-menu {
 	display: flex;
-	flex-direction: column;
-	gap: 0.35rem;
-	padding: 0.65rem 0.75rem;
-	border-radius: 10px;
-	background: rgba(248, 251, 255, 0.94);
-	border: 1px solid var(--border);
-	box-shadow: var(--shadow);
-}
-
-.view-menu-label {
-	font-size: 0.71rem;
-	font-weight: 700;
-	letter-spacing: 0.05em;
-	text-transform: uppercase;
-	color: var(--ink-700);
-}
-
-.view-menu-select {
-	appearance: none;
-	border: 1px solid var(--border);
-	border-radius: 7px;
+	align-items: center;
+	gap: 2rem;
+	padding: 0.6rem;
 	background: #fff;
-	color: var(--ink-900);
-	font-size: 0.86rem;
-	font-weight: 600;
-	padding: 0.35rem 0.55rem;
-	cursor: pointer;
+	border-bottom: 1px solid var(--border);
 }
+
+.variable-select label {
+	margin-right: 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.variable-select select {
+	max-width: 420px;
+	padding: 0.35rem;
+	border-radius: 8px;
+}
+
+.map-legend {
+	width: 300px;
+}
+
+.map-legend-gradient {
+	height: 25px;
+	background: linear-gradient(90deg, #ffffd9, #41b6c4, #081d58);
+	border: 1px solid rgba(17, 39, 63, 0.65);
+}
+
+.map-legend-values {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 0.2rem;
+	font-size: 1rem;
+}
+
 
 .app-load-banner {
 	position: fixed;
@@ -294,9 +306,4 @@
 }
 
 @media (max-width: 900px) {
-	.view-menu {
-		top: 0.5rem;
-		left: 0.5rem;
-	}
-
 }
