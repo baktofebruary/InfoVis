@@ -18,6 +18,6 @@ python src/main.py
 ```bash
 cd client
 npm i
-vite run dev # vite run build
+npm run dev # npm run build
 ```
 </details>
