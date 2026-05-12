@@ -12,10 +12,12 @@ export default function FlatMap({
     onCountryHover,
     pcaData,
     selectedVariable,
+    onCountryClick
 }) {
 
     const containerRef = useRef(null);
     const [hoveredCountry, setHoveredCountry] = useState(null);
+    const [clickedCountry, setClickedCountry] = useState(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
 
     useEffect(() => {
@@ -124,6 +126,9 @@ export default function FlatMap({
                                             : 'rgba(0, 0, 0, 0.62)'
                                     }
                                     strokeWidth={isActive ? 2.15 : 0.9}
+                                    onClick={() => {
+                                        onCountryClick?.(feature?.properties?.name || null);
+                                    }}
                                     onMouseMove={() => {
                                         setHoveredCountry(feature);
                                         onCountryHover?.(feature?.properties?.name || null);

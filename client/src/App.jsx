@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import FlatMap from './FlatMap'
 import PCAWindow from './PCAWindow'
+import LineChart from './LineChart'
 import { useProjectData } from './lib/useProjectData'
 import './App.css'
 
@@ -16,6 +17,7 @@ function App() {
   const [selectedVariable, setSelectedVariable] = useState('')
   const [pcaHoveredCountry, setPcaHoveredCountry] = useState(null)
   const [mapHoveredCountry, setMapHoveredCountry] = useState(null)
+  const [clickedCountry, setClickedCountry] = useState(null)
 
   const variables = pcaData?.variables || []
   const activeVariable = selectedVariable || variables[0]?.key || ''
@@ -63,6 +65,7 @@ function App() {
             onCountryHover={setMapHoveredCountry}
             pcaData = {pcaData}
             selectedVariable={activeVariable}
+            onCountryClick={setClickedCountry}
           />
         </div>
       </div>
@@ -82,8 +85,12 @@ function App() {
           mapHoveredCountry={mapHoveredCountry}
         />
 
-        <div className="future-chart-panel">
-          Future chart
+        <div className="chart-panel">
+          <LineChart
+            pcaData={pcaData}
+            country={clickedCountry}
+            variable={activeVariable}
+          />
         </div>
       </aside>
     </div>
