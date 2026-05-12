@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import GlobeViz from './globe'
 import FlatMap from './FlatMap'
 import PCAWindow from './PCAWindow'
 import { useProjectData } from './lib/useProjectData'
@@ -15,14 +14,11 @@ function App() {
   } = useProjectData()
 
   const [pcaHoveredCountry, setPcaHoveredCountry] = useState(null)
-  const [globeHoveredCountry, setGlobeHoveredCountry] = useState(null)
-  const [viewMode, setViewMode] = useState('globe')
-  const [isPcaDockedRight, setIsPcaDockedRight] = useState(false)
-  const [autoFocusOnPca, setAutoFocusOnPca] = useState(true)
+  const [mapHoveredCountry, setMapHoveredCountry] = useState(null)
 
   return (
-    <div className={`app-fullscreen${isPcaDockedRight ? ' has-pca-docked' : ''}`}>
-      <div className="view-menu">
+    <div className="app-fullscreen">
+      {/* <div className="view-menu">
         <label htmlFor="view-mode" className="view-menu-label">
           Map View
         </label>
@@ -35,28 +31,15 @@ function App() {
           <option value="globe">Globe</option>
           <option value="flat">Paper Map</option>
         </select>
-      </div>
+      </div> */}
 
       <div className="map-pane">
-        {viewMode === 'globe' ? (
-          <GlobeViz
-            countryFeatures={countryFeatures}
-            pcaCountrySet={pcaCountrySet}
-            pcaHoveredCountry={pcaHoveredCountry}
-            onCountryHover={setGlobeHoveredCountry}
-            autoFocusOnPca={autoFocusOnPca}
-            onAutoFocusOnPcaChange={setAutoFocusOnPca}
-          />
-        ) : (
-          <FlatMap
-            countryFeatures={countryFeatures}
-            pcaCountrySet={pcaCountrySet}
-            pcaHoveredCountry={pcaHoveredCountry}
-            onCountryHover={setGlobeHoveredCountry}
-            autoFocusOnPca={autoFocusOnPca}
-            onAutoFocusOnPcaChange={setAutoFocusOnPca}
-          />
-        )}
+        <FlatMap
+          countryFeatures={countryFeatures}
+          pcaCountrySet={pcaCountrySet}
+          pcaHoveredCountry={pcaHoveredCountry}
+          onCountryHover={setMapHoveredCountry}
+        />
       </div>
 
       {loadError && (
@@ -65,14 +48,19 @@ function App() {
         </div>
       )}
 
-      <PCAWindow
-        pcaData={pcaData}
-        isLoadingPca={isLoadingData && !pcaData}
-        pcaLoadError={loadError}
-        onCountryHover={setPcaHoveredCountry}
-        globeHoveredCountry={globeHoveredCountry}
-        onDockedRightChange={setIsPcaDockedRight}
-      />
+      <aside className="right-panel">
+        <PCAWindow
+          pcaData={pcaData}
+          isLoadingPca={isLoadingData && !pcaData}
+          pcaLoadError={loadError}
+          onCountryHover={setPcaHoveredCountry}
+          mapHoveredCountry={mapHoveredCountry}
+        />
+
+         <div className="future-chart-panel">
+          Future chart
+        </div>
+      </aside>
     </div>
   )
 }
