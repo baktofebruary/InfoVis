@@ -1,6 +1,5 @@
 from pathlib import Path
 import pandas as pd
-from pandas import DataFrame, read_csv
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
@@ -31,16 +30,14 @@ def preprocess_csv(csv_path: Path) -> pd.DataFrame:
                 "Pakistan", "Peru", "Philippines", "Russian Federation",
                 "Syrian Arab Republic", "Tunisia", "Turkey", "Ukraine"]
     
-    df = raw_data[raw_data["Country Name"].isin(countries)]
-    df_2020 = df[df["year"] == 2020]
-    
-    return df_2020
+    df = raw_data[raw_data["Country Name"].isin(countries)] 
+    return df
 
-
-def get_cords(data: pd.DataFrame):
-    country_names = data['Country Name'].values
+def get_pca_cords(data: pd.DataFrame):
+    df = data[data["year"] == 2020]
+    country_names = df['Country Name'].values
     
-    X = data.drop(columns=['Country Name', "Country Code", 'year'])
+    X = df.drop(columns=['Country Name', "Country Code", 'year'])
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
@@ -58,7 +55,6 @@ def get_cords(data: pd.DataFrame):
     }
 
     return result
-    
     
 if __name__ == "__main__":
     data = preprocess_csv("data/world_data.csv")

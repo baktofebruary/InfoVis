@@ -3,9 +3,6 @@ import utils
 
 
 if __name__ == "__main__":
-    data = utils.preprocess_csv("data/world_data.csv")
-    data = utils.get_cords(data)
-    
     app = Server()
-    app._temp_pca_data(data)
+    app._temp_pca_data("data/world_data.csv")
     app.start_server(debug = True)
