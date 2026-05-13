@@ -21,7 +21,6 @@
 
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) clamp(420px, 36vw, 580px);
-	grid-template-columns: minmax(0, 1fr) clamp(420px, 36vw, 580px);
 }
 
 .map-pane {
@@ -300,11 +299,6 @@
 	stroke-dasharray: 2 4;
 }
 
-.pca-axis {
-	stroke: rgba(55, 65, 81, 0.9);
-	stroke-width: 1.2;
-}
-
 .pca-axis-label {
 	fill: rgba(55, 65, 81, 0.92);
 	font-size: 13px;
@@ -390,9 +384,6 @@
 	border-radius: 4px;
 	transform: translate(0, -100%);
 	z-index: 7;
-}
-
-@media (max-width: 900px) {
 }
 
 .line-chart-panel {
