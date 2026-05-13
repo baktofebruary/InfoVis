@@ -112,7 +112,7 @@ export default function FlatMap({
                 );
 
                 return isActive
-                    ? 'rgba(255, 72, 72, 0.68)'
+                    ? 'rgba(238, 135, 216, 0.78)'
                     : getCountryColorValue(value, selectedVariableData);
             })
             .attr('stroke', (feature) =>

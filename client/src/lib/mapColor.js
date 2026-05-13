@@ -1,4 +1,4 @@
-import { interpolateYlGnBu } from 'd3-scale-chromatic';
+import { interpolateYlOrRd } from 'd3-scale-chromatic';
 
 export const getCountryMetric = (pcaData, countryName, selectedVariable, selectedYear) => {
     const yearlyValues = pcaData?.country_values_by_year?.[selectedYear];
@@ -21,5 +21,5 @@ export const getCountryColorValue = (value, variableData) => {
     const ratio = (value - min) / (max - min || 1);
     const safeRatio = Math.max(0, Math.min(1, ratio));
 
-    return interpolateYlGnBu(safeRatio);
+    return interpolateYlOrRd(safeRatio);
 };

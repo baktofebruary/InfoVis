@@ -143,7 +143,7 @@
 
 .map-legend-gradient {
 	height: 25px;
-	background: linear-gradient(90deg, #ffffd9, #41b6c4, #081d58);
+	background: linear-gradient(90deg, #ffffcc, #fd8d3c, #800026);
 	border: 1px solid rgba(17, 39, 63, 0.65);
 }
 
@@ -318,7 +318,7 @@
 }
 
 .pca-point {
-	stroke: #ffffff;
+	stroke: #12151a;
 	stroke-width: 0.8;
 	opacity: 0.82;
 	transition: opacity 140ms ease, fill 140ms ease;
