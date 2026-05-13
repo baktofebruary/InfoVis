@@ -48,6 +48,9 @@
 	box-sizing: border-box;
 	background: rgba(248, 251, 255, 0.94);
 	border-left: 1px solid var(--border);
+	min-height: 0;
+	overflow: hidden;
+	grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .chart-panel {
@@ -61,6 +64,8 @@
 	justify-content: center;
 	font-size: 0.85rem;
 	font-weight: 700;
+	height: auto;
+  	overflow: hidden;
 }
 
 .variable-menu {
@@ -157,7 +162,8 @@
 	width: 100%;
 	height: 100%;
 	max-width: none;
-	max-height: none;
+	max-height: auto;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
 	padding: 0.65rem;
@@ -268,10 +274,31 @@
 
 .pca-point:hover,
 .pca-point.pca-point-map-hovered,
-.pca-point.pca-point-pca-hovered {
+.pca-point.pca-point-pca-hovered,
+.pca-point.pca-point-brushed {
 	r: 6.5;
 	fill: var(--danger);
 	opacity: 1;
+}
+
+.pca-point.pca-point-brushed {
+	stroke: #ffffff;
+	stroke-width: 2;
+}
+
+.pca-brush .selection {
+	fill: rgba(43, 94, 167, 0.16);
+	stroke: rgba(43, 94, 167, 0.78);
+	stroke-width: 1.4;
+}
+
+.pca-brush .overlay {
+	cursor: crosshair;
+}
+
+.pca-brush .handle {
+	fill: rgba(43, 94, 167, 0.22);
+	stroke: rgba(43, 94, 167, 0.58);
 }
 
 .pca-loading,
@@ -314,9 +341,11 @@
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
-	justify-content: flex-start;
+	justify-content: stretch;
 	padding: 0.8rem;
 	box-sizing: border-box;
+	min-height: 0;
+  	overflow: hidden;
 }
 
 .line-chart-title {
@@ -328,6 +357,34 @@
 .line-chart-subtitle {
 	margin-top: 0.15rem;
 	font-size: 1rem;
+}
+
+.line-chart-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.7rem;
+	margin-top: 0.45rem;
+	font-size: 0.78rem;
+	color: var(--ink-700);
+}
+
+.line-chart-legend-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	white-space: nowrap;
+}
+
+.line-chart-legend-swatch {
+	width: 0.65rem;
+	height: 0.65rem;
+	border-radius: 999px;
+	border: 1px solid rgba(17, 39, 63, 0.18);
+}
+
+.line-chart-legend-more {
+	color: var(--ink-500);
+	font-weight: 700;
 }
 
 .line-chart {

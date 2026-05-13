@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import FlatMap from './FlatMap'
 import PCAWindow from './PCAWindow'
 import LineChart from './LineChart'
 import { useProjectData } from './lib/useProjectData'
+import { normalizeCountry } from './lib/country'
 import './App.css'
 
 function App() {
@@ -18,11 +19,32 @@ function App() {
   const [pcaHoveredCountry, setPcaHoveredCountry] = useState(null)
   const [mapHoveredCountry, setMapHoveredCountry] = useState(null)
   const [clickedCountry, setClickedCountry] = useState(null)
+  const [brushedCountries, setBrushedCountries] = useState([])
 
   const variables = pcaData?.variables || []
   const activeVariable = selectedVariable || variables[0]?.key || ''
   const activeVariableData = variables.find((variable) =>
      variable.key === activeVariable) || null
+  const brushedCountrySet = useMemo(
+    () => new Set(brushedCountries.map(normalizeCountry)),
+    [brushedCountries]
+  )
+  const chartCountries = brushedCountries.length
+    ? brushedCountries
+    : clickedCountry
+      ? [clickedCountry]
+      : []
+
+  const handleBrushedCountriesChange = useCallback((countries) => {
+    setBrushedCountries(countries)
+    setClickedCountry(null)
+  }, [])
+
+  const handleCountryClick = useCallback((country) => {
+    if (!brushedCountries.length) {
+      setClickedCountry(country)
+    }
+  }, [brushedCountries.length])
 
   return (
     <div className="app-fullscreen">
@@ -65,7 +87,8 @@ function App() {
             onCountryHover={setMapHoveredCountry}
             pcaData = {pcaData}
             selectedVariable={activeVariable}
-            onCountryClick={setClickedCountry}
+            onCountryClick={handleCountryClick}
+            brushedCountrySet={brushedCountrySet}
           />
         </div>
       </div>
@@ -83,12 +106,14 @@ function App() {
           pcaLoadError={loadError}
           onCountryHover={setPcaHoveredCountry}
           mapHoveredCountry={mapHoveredCountry}
+          brushedCountrySet={brushedCountrySet}
+          onBrushedCountriesChange={handleBrushedCountriesChange}
         />
 
         <div className="chart-panel">
           <LineChart
             pcaData={pcaData}
-            country={clickedCountry}
+            countries={chartCountries}
             variable={activeVariable}
           />
         </div>

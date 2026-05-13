@@ -12,12 +12,12 @@ export default function FlatMap({
     onCountryHover,
     pcaData,
     selectedVariable,
-    onCountryClick
+    onCountryClick,
+    brushedCountrySet
 }) {
 
     const containerRef = useRef(null);
     const [hoveredCountry, setHoveredCountry] = useState(null);
-    const [clickedCountry, setClickedCountry] = useState(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
     const [tooltip, setTooltip] = useState(null);
 
@@ -54,7 +54,10 @@ export default function FlatMap({
         const isHoveredOnMap =
             feature === hoveredCountry;
 
-        return isHoveredFromPca || isHoveredOnMap;
+        const isBrushed =
+            brushedCountrySet?.has(normalizeCountry(countryName));
+
+        return isHoveredFromPca || isHoveredOnMap || isBrushed;
     };
 
     const projection = useMemo(() => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { brush, select } from 'd3';
 import { normalizeCountry } from './lib/country';
 
 const PADDING_RATIO = 0.12;
@@ -78,11 +79,14 @@ export default function PCAWindow({
     isLoadingPca,
     pcaLoadError,
     onCountryHover,
-    mapHoveredCountry
+    mapHoveredCountry,
+    brushedCountrySet,
+    onBrushedCountriesChange
 }) {
     
     const panelRef = useRef(null);
     const plotRef = useRef(null);
+    const brushRef = useRef(null);
 
     const [plotSize, setPlotSize] = useState({ width: 0, height: 0 });
     const [tooltip, setTooltip] = useState({
@@ -107,6 +111,43 @@ export default function PCAWindow({
     }, []);
 
     const plot = useMemo(() => buildPlotModel(pcaData, plotSize), [pcaData, plotSize]);
+
+    useEffect(() => {
+        if (!brushRef.current || !plot) return;
+
+        const brushBehavior = brush()
+            .extent([
+                [plot.padding, plot.padding],
+                [plot.plotWidth - plot.padding, plot.plotHeight - plot.padding],
+            ])
+            .on('brush end', (event) => {
+                const selection = event.selection;
+
+                if (!selection) {
+                    onBrushedCountriesChange?.([]);
+                    return;
+                }
+
+                const [[x0, y0], [x1, y1]] = selection;
+                const selectedCountries = plot.points
+                    .filter((point) =>
+                        point.cx >= x0 &&
+                        point.cx <= x1 &&
+                        point.cy >= y0 &&
+                        point.cy <= y1
+                    )
+                    .map((point) => point.country);
+
+                onBrushedCountriesChange?.(selectedCountries);
+            });
+
+        const brushSelection = select(brushRef.current);
+        brushSelection.call(brushBehavior);
+
+        return () => {
+            brushSelection.on('.brush', null);
+        };
+    }, [plot, onBrushedCountriesChange]);
 
     const handlePointMove = (event, country) => {
         if (!panelRef.current) return;
@@ -134,6 +175,9 @@ export default function PCAWindow({
     const hoveredPcaName = normalizeCountry(tooltip.visible ? tooltip.label : '');
     const isPcaHoveredPoint = (country) =>
         hoveredPcaName && normalizeCountry(country) === hoveredPcaName;
+
+    const isBrushedPoint = (country) =>
+        brushedCountrySet?.has(normalizeCountry(country));
 
     return (
         <aside className="pca-window" ref={panelRef}>
@@ -275,6 +319,7 @@ export default function PCAWindow({
                         >
                             {`PC2 (${((plot.explainedVariance[1] || 0) * 100).toFixed(1)}%)`}
                         </text>
+                        <g ref={brushRef} className="pca-brush" />
                         {plot.points.map((point) => (
                             <circle
                                 key={point.key}
@@ -288,6 +333,10 @@ export default function PCAWindow({
                                 }${
                                     isPcaHoveredPoint(point.country)
                                         ? ' pca-point-pca-hovered'
+                                        : ''
+                                }${
+                                    isBrushedPoint(point.country)
+                                        ? ' pca-point-brushed'
                                         : ''
                                 }`}
                                 filter="url(#pca-point-shadow)"

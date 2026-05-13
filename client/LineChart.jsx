@@ -1,5 +1,3 @@
-import { scaleLinear, extent, max, line } from 'd3';
-
 export default function LineChart(
     { pcaData, country, variable }) {
 
@@ -25,8 +23,6 @@ export default function LineChart(
 //     const linePath = line()
 //     .x((d) => x(d.year))
 //     .y((d) => yScale(d.value))(series)
-
-  console.log(series);
    return (
     <div className="future-chart-panel">
       Chart for {country}
