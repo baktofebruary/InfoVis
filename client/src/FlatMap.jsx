@@ -12,6 +12,7 @@ export default function FlatMap({
     onCountryHover,
     pcaData,
     selectedVariable,
+    selectedYear,
     onCountryClick,
     brushedCountrySet
 }) {
@@ -74,12 +75,14 @@ export default function FlatMap({
         return geoPath(projection);
     }, [projection]);
 
-    const tooltipYear = 2020;
+    const tooltipYear = selectedYear || pcaData?.year || 2020;
     const tooltipVariables = [...(pcaData?.variables || [])]
         .sort((a, b) => a.key.length - b.key.length)
         .slice(0, 8);
     const tooltipValues = tooltip
-        ? pcaData?.country_values?.[tooltip.country] || {}
+        ? pcaData?.country_values_by_year?.[tooltipYear]?.[tooltip.country] ||
+            pcaData?.country_values?.[tooltip.country] ||
+            {}
         : {};
     
     return (
@@ -118,7 +121,8 @@ export default function FlatMap({
                              const value = getCountryMetric(
                                 pcaData,
                                 feature?.properties?.name,
-                                selectedVariable
+                                selectedVariable,
+                                selectedYear
                             );
                             
                             return (

@@ -41,11 +41,11 @@ def calculate_pca(data: pd.DataFrame):
     coords = pca.fit_transform(X_scaled)
     return pca, coords
 
-def get_variables_data(data: pd.DataFrame, X: pd.DataFrame):
+def get_variables_data(data: pd.DataFrame, variable_columns):
         
     variables = []
 
-    for col in X.columns:
+    for col in variable_columns:
         values = pd.to_numeric(data[col], errors="coerce")
         valid_val = values.dropna()
 
@@ -58,6 +58,10 @@ def get_variables_data(data: pd.DataFrame, X: pd.DataFrame):
             'max': float(valid_val.max()),
         })
 
+    return variables
+
+
+def get_country_values(data: pd.DataFrame, variables: list):
     country_values = {}
 
     for _, row in data.iterrows():
@@ -70,7 +74,16 @@ def get_variables_data(data: pd.DataFrame, X: pd.DataFrame):
                 metrics[variable["key"]] = float(value)
         country_values[row["Country Name"]] = metrics   
 
-    return variables, country_values
+    return country_values
+
+
+def get_country_values_by_year(data: pd.DataFrame, variables: list):
+    country_values_by_year = {}
+
+    for year, group in data.groupby("year"):
+        country_values_by_year[int(year)] = get_country_values(group, variables)
+
+    return country_values_by_year
 
 
 def get_time_series(data: pd.DataFrame, variables: list):
@@ -101,11 +114,15 @@ def get_pca_cords(data: pd.DataFrame):
     X = df.drop(columns=['Country Name', "Country Code", 'year'])
     
     pca, coords = calculate_pca(X)
-    variables, country_values = get_variables_data(df, X)
+    variables = get_variables_data(data, X.columns)
+    country_values = get_country_values(df, variables)
+    country_values_by_year = get_country_values_by_year(data, variables)
     country_series = get_time_series(data, variables)
+    years = sorted(int(year) for year in data["year"].dropna().unique())
     
     result = {
         "year": 2020,
+        "years": years,
         "countries": country_names.tolist(),
         "x": coords[:, 0].tolist(),
         "y": coords[:, 1].tolist(),
@@ -113,6 +130,7 @@ def get_pca_cords(data: pd.DataFrame):
         "feature_loadings": pca.components_.tolist(),
         "variables": variables,
         "country_values": country_values,
+        "country_values_by_year": country_values_by_year,
         "country_series": country_series,
     }
 

@@ -20,11 +20,20 @@ function App() {
   const [mapHoveredCountry, setMapHoveredCountry] = useState(null)
   const [clickedCountry, setClickedCountry] = useState(null)
   const [brushedCountries, setBrushedCountries] = useState([])
+  const [selectedYear, setSelectedYear] = useState('')
 
+  const years = useMemo(() => pcaData?.years || [], [pcaData])
   const variables = pcaData?.variables || []
   const activeVariable = selectedVariable || variables[0]?.key || ''
   const activeVariableData = variables.find((variable) =>
      variable.key === activeVariable) || null
+  const yearMin = years[0] || 0
+  const yearMax = years[years.length - 1] || 0
+  const defaultYear = pcaData?.year && years.includes(pcaData.year)
+    ? pcaData.year
+    : yearMax
+  const requestedYear = Number(selectedYear)
+  const activeYear = years.includes(requestedYear) ? requestedYear : defaultYear
   const brushedCountrySet = useMemo(
     () => new Set(brushedCountries.map(normalizeCountry)),
     [brushedCountries]
@@ -66,6 +75,22 @@ function App() {
                 </option>
               ))}
             </select>
+            <div className="year-control">
+              <label htmlFor="year">
+                Year
+              </label>
+              <input
+                id="year"
+                type="range"
+                min={yearMin}
+                max={yearMax}
+                step="1"
+                value={activeYear}
+                onChange={(event) => setSelectedYear(Number(event.target.value))}
+                disabled={!years.length}
+              />
+              <span className="year-value">{activeYear || '-'}</span>
+            </div>
           </div>
 
           {activeVariableData && (
@@ -87,6 +112,7 @@ function App() {
             onCountryHover={setMapHoveredCountry}
             pcaData = {pcaData}
             selectedVariable={activeVariable}
+            selectedYear={activeYear}
             onCountryClick={handleCountryClick}
             brushedCountrySet={brushedCountrySet}
           />
@@ -115,6 +141,7 @@ function App() {
             pcaData={pcaData}
             countries={chartCountries}
             variable={activeVariable}
+            selectedYear={activeYear}
           />
         </div>
       </aside>

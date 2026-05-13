@@ -1,7 +1,10 @@
 import { interpolateYlGnBu } from 'd3-scale-chromatic';
 
-export const getCountryMetric = (pcaData, countryName, selectedVariable) => {
-    return pcaData?.country_values?.[countryName]?.[selectedVariable] ?? null;
+export const getCountryMetric = (pcaData, countryName, selectedVariable, selectedYear) => {
+    const yearlyValues = pcaData?.country_values_by_year?.[selectedYear];
+    const yearlyValue = yearlyValues?.[countryName]?.[selectedVariable];
+
+    return yearlyValue ?? pcaData?.country_values?.[countryName]?.[selectedVariable] ?? null;
 };
 
 export const getVariableData = (pcaData, selectedVariable) => {
