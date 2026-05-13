@@ -1,4 +1,5 @@
-import { scaleLinear, max, min, line, format, scaleOrdinal, schemeTableau10 } from 'd3';
+import { useEffect, useRef } from 'react';
+import { scaleLinear, max, min, line, format, scaleOrdinal, schemeTableau10, select } from 'd3';
 
 const width = 700;
 const height = 400;
@@ -7,6 +8,13 @@ const LEGEND_LIMIT = 5;
 const SELECTED_VALUE_LIMIT = 5;
 
 export default function LineChart({ pcaData, countries = [], variable, selectedYear }) {
+    const axisLinesRef = useRef(null);
+    const axisLabelsRef = useRef(null);
+    const linesRef = useRef(null);
+    const pointsRef = useRef(null);
+    const yearMarkerRef = useRef(null);
+    const selectedPointsRef = useRef(null);
+
     const selectedCountries = countries.filter(Boolean);
     const seriesByCountry = selectedCountries
         .map((country) => ({
@@ -18,14 +26,11 @@ export default function LineChart({ pcaData, countries = [], variable, selectedY
         .filter((entry) => entry.series.length);
     const allPoints = seriesByCountry.flatMap((entry) => entry.series);
     const activeYear = Number(selectedYear);
-
-    if (!selectedCountries.length) {
-        return <div className="future-chart-panel">Click or brush countries</div>;
-    }
-
-    if (!seriesByCountry.length) {
-        return <div className="future-chart-panel">No data</div>;
-    }
+    const emptyMessage = !selectedCountries.length
+        ? 'Click or brush countries'
+        : !seriesByCountry.length
+            ? 'No data'
+            : '';
 
     const rightEdge = width - margin.right;
     const bottomEdge = height - margin.bottom;
@@ -81,6 +86,136 @@ export default function LineChart({ pcaData, countries = [], variable, selectedY
         0,
         selectedYearPoints.length - SELECTED_VALUE_LIMIT
     );
+    const axisLines = [
+        {
+            key: 'x-axis',
+            x1: margin.left,
+            y1: xAxisY,
+            x2: rightEdge,
+            y2: xAxisY,
+        },
+        {
+            key: 'y-axis',
+            x1: margin.left,
+            y1: margin.top,
+            x2: margin.left,
+            y2: bottomEdge,
+        },
+        ...xTicks.map((year) => ({
+            key: `x-tick-${year}`,
+            x1: x(year),
+            y1: xAxisY,
+            x2: x(year),
+            y2: xAxisY + 5,
+        })),
+        ...yTicks.map((value) => ({
+            key: `y-tick-${value}`,
+            x1: margin.left - 5,
+            y1: y(value),
+            x2: margin.left,
+            y2: y(value),
+        })),
+    ];
+    const axisLabels = [
+        ...xTicks.map((year) => ({
+            key: `x-label-${year}`,
+            x: x(year),
+            y: height - 8,
+            textAnchor: 'middle',
+            text: year.toFixed(0),
+        })),
+        ...yTicks.map((value) => ({
+            key: `y-label-${value}`,
+            x: margin.left - 8,
+            y: y(value) + 4,
+            textAnchor: 'end',
+            text: formatValue(value),
+        })),
+    ];
+    const periodicPoints = seriesByCountry.flatMap(({ country, series }) =>
+        series
+            .filter((d) => d.year % 5 === 0)
+            .map((point) => ({
+                country,
+                point,
+            }))
+    );
+    const yearMarkerData = hasSelectedYear ? [{ key: 'selected-year', year: activeYear }] : [];
+
+    useEffect(() => {
+        if (
+            !axisLinesRef.current ||
+            !axisLabelsRef.current ||
+            !linesRef.current ||
+            !pointsRef.current ||
+            !yearMarkerRef.current ||
+            !selectedPointsRef.current
+        ) {
+            return;
+        }
+
+        select(axisLinesRef.current)
+            .selectAll('line')
+            .data(axisLines, (d) => d.key)
+            .join('line')
+            .attr('class', 'line-chart-axis')
+            .attr('x1', (d) => d.x1)
+            .attr('y1', (d) => d.y1)
+            .attr('x2', (d) => d.x2)
+            .attr('y2', (d) => d.y2);
+
+        select(axisLabelsRef.current)
+            .selectAll('text')
+            .data(axisLabels, (d) => d.key)
+            .join('text')
+            .attr('class', 'line-chart-tick')
+            .attr('x', (d) => d.x)
+            .attr('y', (d) => d.y)
+            .attr('text-anchor', (d) => d.textAnchor)
+            .text((d) => d.text);
+
+        select(yearMarkerRef.current)
+            .selectAll('line')
+            .data(yearMarkerData, (d) => d.key)
+            .join('line')
+            .attr('class', 'line-chart-year-marker')
+            .attr('x1', (d) => x(d.year))
+            .attr('y1', margin.top)
+            .attr('x2', (d) => x(d.year))
+            .attr('y2', bottomEdge);
+
+        select(linesRef.current)
+            .selectAll('path.line-chart-line')
+            .data(seriesByCountry, (d) => d.country)
+            .join('path')
+            .attr('class', 'line-chart-line')
+            .attr('d', (d) => linePath(d.series))
+            .style('stroke', (d) => color(d.country));
+
+        select(pointsRef.current)
+            .selectAll('circle.line-chart-point')
+            .data(periodicPoints, (d) => `${d.country}-${d.point.year}`)
+            .join('circle')
+            .attr('class', 'line-chart-point')
+            .attr('cx', (d) => x(d.point.year))
+            .attr('cy', (d) => y(d.point.value))
+            .attr('r', 3)
+            .style('fill', (d) => color(d.country));
+
+        select(selectedPointsRef.current)
+            .selectAll('circle.line-chart-selected-point')
+            .data(selectedYearPoints, (d) => `${d.country}-${d.point.year}`)
+            .join('circle')
+            .attr('class', 'line-chart-selected-point')
+            .attr('cx', (d) => x(d.point.year))
+            .attr('cy', (d) => y(d.point.value))
+            .attr('r', 5)
+            .style('fill', (d) => color(d.country));
+    });
+
+    if (emptyMessage) {
+        return <div className="future-chart-panel">{emptyMessage}</div>;
+    }
 
     return (
         <div className="line-chart-panel">
@@ -128,108 +263,12 @@ export default function LineChart({ pcaData, countries = [], variable, selectedY
             )}
 
             <svg className="line-chart" viewBox={`0 0 ${width} ${height}`}>
-                {hasSelectedYear && (
-                    <line
-                        x1={x(activeYear)}
-                        y1={margin.top}
-                        x2={x(activeYear)}
-                        y2={bottomEdge}
-                        className="line-chart-year-marker"
-                    />
-                )}
-
-                <line
-                    x1={margin.left}
-                    y1={xAxisY}
-                    x2={rightEdge}
-                    y2={xAxisY}
-                    className="line-chart-axis"
-                />
-
-                <line
-                    x1={margin.left}
-                    y1={margin.top}
-                    x2={margin.left}
-                    y2={bottomEdge}
-                    className="line-chart-axis"
-                />
-
-                {xTicks.map((year) => (
-                    <line
-                        key={`x-tick-${year}`}
-                        x1={x(year)}
-                        y1={xAxisY}
-                        x2={x(year)}
-                        y2={xAxisY + 5}
-                        className="line-chart-axis"
-                    />
-                ))}
-
-                {xTicks.map((year) => (
-                    <text
-                        key={`x-label-${year}`}
-                        x={x(year)}
-                        y={height - 8}
-                        textAnchor="middle"
-                        className="line-chart-tick"
-                    >
-                        {year.toFixed(0)}
-                    </text>
-                ))}
-
-                {yTicks.map((value) => (
-                    <line
-                        key={`y-tick-${value}`}
-                        x1={margin.left - 5}
-                        y1={y(value)}
-                        x2={margin.left}
-                        y2={y(value)}
-                        className="line-chart-axis"
-                    />
-                ))}
-
-                {yTicks.map((value) => (
-                    <text
-                        key={`y-label-${value}`}
-                        x={margin.left - 8}
-                        y={y(value) + 4}
-                        textAnchor="end"
-                        className="line-chart-tick"
-                    >
-                        {formatValue(value)}
-                    </text>
-                ))}
-
-                {seriesByCountry.map(({ country, series }) => (
-                    <g key={country}>
-                        <path
-                            className="line-chart-line"
-                            d={linePath(series)}
-                            style={{ stroke: color(country) }}
-                        />
-                        {series.filter((d) => d.year % 5 === 0).map((d) => (
-                            <circle
-                                key={`${country}-${d.year}`}
-                                cx={x(d.year)}
-                                cy={y(d.value)}
-                                r="3"
-                                className="line-chart-point"
-                                style={{ fill: color(country) }}
-                            />
-                        ))}
-                    </g>
-                ))}
-
-                {selectedYearPoints.map(({ country, point }) => (
-                    <circle
-                        key={`selected-${country}-${point.year}`}
-                        cx={x(point.year)}
-                        cy={y(point.value)}
-                        r="5"
-                        className="line-chart-selected-point"
-                        style={{ fill: color(country) }}
-                    />
-                ))}
+                <g ref={axisLinesRef} />
+                <g ref={axisLabelsRef} />
+                <g ref={yearMarkerRef} />
+                <g ref={linesRef} />
+                <g ref={pointsRef} />
+                <g ref={selectedPointsRef} />
             </svg>
         </div>
     );

@@ -134,6 +134,8 @@ function App() {
           mapHoveredCountry={mapHoveredCountry}
           brushedCountrySet={brushedCountrySet}
           onBrushedCountriesChange={handleBrushedCountriesChange}
+          selectedVariable={activeVariable}
+          selectedYear={activeYear}
         />
 
         <div className="chart-panel">

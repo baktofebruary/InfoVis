@@ -324,7 +324,6 @@
 }
 
 .pca-point {
-	fill: #3b82f6;
 	stroke: #ffffff;
 	stroke-width: 0.8;
 	opacity: 0.82;
@@ -337,13 +336,14 @@
 .pca-point.pca-point-pca-hovered,
 .pca-point.pca-point-brushed {
 	r: 6;
-	fill: #ef4444;
 	opacity: 1;
+	stroke: #ef4444;
+	stroke-width: 1.8;
 }
 
 .pca-point.pca-point-brushed {
-	stroke: #ffffff;
-	stroke-width: 1.5;
+	stroke: #111827;
+	stroke-width: 2.2;
 }
 
 .pca-brush .selection {

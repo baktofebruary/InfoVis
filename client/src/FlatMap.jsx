@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { geoEquirectangular, geoGraticule10, geoPath } from 'd3-geo';
+import { select } from 'd3';
 import { filterCountriesForPca, normalizeCountry } from './lib/country';
 import {getCountryMetric, getVariableData, getCountryColorValue,} from './lib/mapColor';
 
@@ -18,6 +19,7 @@ export default function FlatMap({
 }) {
 
     const containerRef = useRef(null);
+    const countriesRef = useRef(null);
     const [hoveredCountry, setHoveredCountry] = useState(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
     const [tooltip, setTooltip] = useState(null);
@@ -46,7 +48,7 @@ export default function FlatMap({
         [pcaData, selectedVariable]);
 
    
-    const isHighlighted = (feature) => {
+    const isHighlighted = useCallback((feature) => {
         const countryName = feature?.properties?.name;
 
         const isHoveredFromPca =
@@ -59,7 +61,7 @@ export default function FlatMap({
             brushedCountrySet?.has(normalizeCountry(countryName));
 
         return isHoveredFromPca || isHoveredOnMap || isBrushed;
-    };
+    }, [pcaHoveredCountry, hoveredCountry, brushedCountrySet]);
 
     const projection = useMemo(() => {
         if (!size.width || !size.height) return null;
@@ -74,6 +76,85 @@ export default function FlatMap({
         if (!projection) return null;
         return geoPath(projection);
     }, [projection]);
+
+    useEffect(() => {
+        if (!countriesRef.current || !pathGen) return;
+
+        const countryLayer = select(countriesRef.current);
+
+        const countries = countryLayer
+            .selectAll('path.flat-country')
+            .data(
+                visibleCountries,
+                (feature) => feature?.properties?.name || ''
+            )
+            .join(
+                (enter) => {
+                    const paths = enter
+                        .append('path')
+                        .attr('class', 'flat-country')
+                        .attr('vector-effect', 'non-scaling-stroke');
+
+                    paths.append('title');
+                    return paths;
+                },
+                (update) => update,
+                (exit) => exit.remove()
+            )
+            .attr('d', (feature) => pathGen(feature) || '')
+            .attr('fill', (feature) => {
+                const isActive = isHighlighted(feature);
+                const value = getCountryMetric(
+                    pcaData,
+                    feature?.properties?.name,
+                    selectedVariable,
+                    selectedYear
+                );
+
+                return isActive
+                    ? 'rgba(255, 72, 72, 0.68)'
+                    : getCountryColorValue(value, selectedVariableData);
+            })
+            .attr('stroke', (feature) =>
+                isHighlighted(feature)
+                    ? 'rgba(0, 0, 0, 0.85)'
+                    : 'rgba(0, 0, 0, 0.62)'
+            )
+            .attr('stroke-width', (feature) => isHighlighted(feature) ? 2.15 : 0.9)
+            .on('click', (_, feature) => {
+                onCountryClick?.(feature?.properties?.name || null);
+            })
+            .on('mousemove', (event, feature) => {
+                const name = feature?.properties?.name || null;
+                setHoveredCountry(feature);
+                onCountryHover?.(name);
+
+                setTooltip({
+                    x: event.clientX,
+                    y: event.clientY,
+                    country: name,
+                });
+            })
+            .on('mouseleave', () => {
+                setHoveredCountry(null);
+                onCountryHover?.(null);
+                setTooltip(null);
+            });
+
+        countries
+            .select('title')
+            .text((feature) => feature?.properties?.name || 'Country');
+    }, [
+        visibleCountries,
+        pathGen,
+        pcaData,
+        selectedVariable,
+        selectedYear,
+        selectedVariableData,
+        isHighlighted,
+        onCountryClick,
+        onCountryHover,
+    ]);
 
     const tooltipYear = selectedYear || pcaData?.year || 2020;
     const tooltipVariables = [...(pcaData?.variables || [])]
@@ -116,56 +197,7 @@ export default function FlatMap({
                     vectorEffect="non-scaling-stroke"
                 />
 
-                        {visibleCountries.map((feature) => {
-                            const isActive = isHighlighted(feature);
-                             const value = getCountryMetric(
-                                pcaData,
-                                feature?.properties?.name,
-                                selectedVariable,
-                                selectedYear
-                            );
-                            
-                            return (
-                                <path
-                                    key={feature.properties?.name}
-                                    d={pathGen(feature) || ''}
-                                    className="flat-country"
-                                    vectorEffect="non-scaling-stroke"
-                                    fill={
-                                        isActive
-                                            ? 'rgba(255, 72, 72, 0.68)'
-                                            : getCountryColorValue(value, selectedVariableData)
-                                    }
-                                    stroke={
-                                        isActive
-                                            ? 'rgba(0, 0, 0, 0.85)'
-                                            : 'rgba(0, 0, 0, 0.62)'
-                                    }
-                                    strokeWidth={isActive ? 2.15 : 0.9}
-                                    onClick={() => {
-                                        onCountryClick?.(feature?.properties?.name || null);
-                                    }}
-                                    onMouseMove={(event) => {
-                                        const name = feature?.properties?.name || null;
-                                        setHoveredCountry(feature);
-                                        onCountryHover?.(name);
-
-                                        setTooltip({
-                                        x: event.clientX,
-                                        y: event.clientY,
-                                        country: name,
-                                        });
-                                    }}
-                                    onMouseLeave={() => {
-                                        setHoveredCountry(null);
-                                        onCountryHover?.(null);
-                                        setTooltip(null);
-                                    }}
-                                >
-                                    <title>{feature?.properties?.name || 'Country'}</title>
-                                </path>
-                            );
-                        })}
+                <g ref={countriesRef} />
                 </svg>
             
             )}

@@ -9,6 +9,7 @@ import {
     select,
 } from 'd3';
 import { normalizeCountry } from './lib/country';
+import { getCountryColorValue, getCountryMetric, getVariableData } from './lib/mapColor';
 
 const PADDING_RATIO = 0.12;
 
@@ -77,11 +78,19 @@ export default function PCAWindow({
     onCountryHover,
     mapHoveredCountry,
     brushedCountrySet,
-    onBrushedCountriesChange
+    onBrushedCountriesChange,
+    selectedVariable,
+    selectedYear
 }) {
     const panelRef = useRef(null);
     const plotRef = useRef(null);
     const svgRef = useRef(null);
+    const captionRef = useRef(null);
+    const gridRef = useRef(null);
+    const axisRef = useRef(null);
+    const axisLabelRef = useRef(null);
+    const brushRef = useRef(null);
+    const pointsRef = useRef(null);
 
     const [plotSize, setPlotSize] = useState({ width: 0, height: 0 });
     const [tooltip, setTooltip] = useState({
@@ -106,121 +115,113 @@ export default function PCAWindow({
     }, []);
 
     const plot = useMemo(() => buildPlotModel(pcaData, plotSize), [pcaData, plotSize]);
+    const selectedVariableData = useMemo(
+        () => getVariableData(pcaData, selectedVariable),
+        [pcaData, selectedVariable]
+    );
 
     useEffect(() => {
-        if (!svgRef.current || !plot) return;
+        if (!svgRef.current || !plot || !captionRef.current) return;
 
         const svg = select(svgRef.current);
-        svg.selectAll('*').remove();
         svg.attr('viewBox', `0 0 ${plot.plotWidth} ${plot.plotHeight}`);
 
-        const defs = svg.append('defs');
+        select(captionRef.current)
+            .selectAll('text')
+            .data([
+                {
+                    key: 'caption',
+                    x: 20,
+                    y: 26,
+                    className: 'pca-chart-caption',
+                    text: `${plot.points.length} countries`,
+                },
+                {
+                    key: 'subcaption',
+                    x: 20,
+                    y: 44,
+                    className: 'pca-chart-subcaption',
+                    text: 'Hover over points to sync with the globe',
+                },
+            ], (d) => d.key)
+            .join('text')
+            .attr('x', (d) => d.x)
+            .attr('y', (d) => d.y)
+            .attr('class', (d) => d.className)
+            .text((d) => d.text);
 
-        [
-            ['linearGradient', 'pca-bg-gradient', { x1: '0', y1: '0', x2: '1', y2: '1' }, [
-                ['0%', '#f7f3ea'],
-                ['48%', '#eef4ff'],
-                ['100%', '#fff8ef'],
-            ]],
-            ['radialGradient', 'pca-glow', { cx: '50%', cy: '35%', r: '70%' }, [
-                ['0%', 'rgba(255,255,255,0.85)'],
-                ['100%', 'rgba(255,255,255,0)'],
-            ]],
-        ].forEach(([tag, id, attrs, stops]) => {
-            const gradient = defs.append(tag).attr('id', id);
-            Object.entries(attrs).forEach(([key, value]) => gradient.attr(key, value));
-            stops.forEach(([offset, color]) =>
-                gradient.append('stop').attr('offset', offset).attr('stop-color', color)
+        const tickFormat = format('.2~f');
+        const gridData = [
+            ...plot.xTicks.map((tick) => ({ key: `x-${tick}`, axis: 'x', tick })),
+            ...plot.yTicks.map((tick) => ({ key: `y-${tick}`, axis: 'y', tick })),
+        ];
+
+        select(gridRef.current)
+            .selectAll('line')
+            .data(gridData, (d) => d.key)
+            .join('line')
+            .attr('class', 'pca-grid-line')
+            .attr('x1', (d) => d.axis === 'x' ? plot.xScale(d.tick) : plot.padding)
+            .attr('y1', (d) => d.axis === 'x' ? plot.padding : plot.yScale(d.tick))
+            .attr('x2', (d) => d.axis === 'x' ? plot.xScale(d.tick) : plot.plotWidth - plot.padding)
+            .attr('y2', (d) => d.axis === 'x' ? plot.plotHeight - plot.padding : plot.yScale(d.tick));
+
+        const axisGroups = select(axisRef.current)
+            .selectAll('g.pca-axis-layer')
+            .data(['x', 'y'], (axis) => axis)
+            .join('g')
+            .attr('class', (axis) => `pca-axis-layer pca-axis-${axis}`)
+            .attr('transform', (axis) =>
+                axis === 'x'
+                    ? `translate(0, ${plot.plotHeight - plot.padding})`
+                    : `translate(${plot.padding}, 0)`
+            );
+
+        axisGroups.each(function updateAxis(axis) {
+            const scale = axis === 'x' ? plot.xScale : plot.yScale;
+            const ticks = axis === 'x' ? plot.xTicks : plot.yTicks;
+
+            select(this).call(
+                (axis === 'x' ? axisBottom : axisLeft)(scale)
+                    .tickValues(ticks)
+                    .tickSize(6)
+                    .tickFormat(tickFormat)
             );
         });
 
-        const pointShadow = defs
-            .append('filter')
-            .attr('id', 'pca-point-shadow')
-            .attr('x', '-40%')
-            .attr('y', '-40%')
-            .attr('width', '180%')
-            .attr('height', '180%');
+        axisGroups.selectAll('.domain').attr('stroke', 'none');
+        axisGroups.selectAll('.tick line').attr('class', 'pca-axis-tick');
+        axisGroups.selectAll('.tick text').attr('class', 'pca-axis-tick-label');
 
-        pointShadow
-            .append('feDropShadow')
-            .attr('dx', 0)
-            .attr('dy', 2)
-            .attr('stdDeviation', 2.2)
-            .attr('flood-color', '#17315e')
-            .attr('flood-opacity', 0.18);
+        select(axisLabelRef.current)
+            .selectAll('text')
+            .data([
+                {
+                    key: 'pc1',
+                    x: plot.plotWidth / 2,
+                    y: plot.plotHeight - 12,
+                    transform: null,
+                    text: `PC1 (${((plot.explainedVariance[0] || 0) * 100).toFixed(1)}%)`,
+                },
+                {
+                    key: 'pc2',
+                    x: 14,
+                    y: plot.plotHeight / 2,
+                    transform: `rotate(-90 14 ${plot.plotHeight / 2})`,
+                    text: `PC2 (${((plot.explainedVariance[1] || 0) * 100).toFixed(1)}%)`,
+                },
+            ], (d) => d.key)
+            .join('text')
+            .attr('x', (d) => d.x)
+            .attr('y', (d) => d.y)
+            .attr('transform', (d) => d.transform)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'pca-axis-label')
+            .text((d) => d.text);
+    }, [plot]);
 
-        svg.append('rect')
-            .attr('width', plot.plotWidth)
-            .attr('height', plot.plotHeight)
-            .attr('fill', 'url(#pca-bg-gradient)')
-            .attr('rx', 12);
-
-        svg.append('rect')
-            .attr('width', plot.plotWidth)
-            .attr('height', plot.plotHeight)
-            .attr('fill', 'url(#pca-glow)')
-            .attr('rx', 12)
-            .attr('opacity', 0.85);
-
-        svg.append('text')
-            .attr('x', 20)
-            .attr('y', 26)
-            .attr('class', 'pca-chart-caption')
-            .text(`${plot.points.length} countries`);
-
-        svg.append('text')
-            .attr('x', 20)
-            .attr('y', 44)
-            .attr('class', 'pca-chart-subcaption')
-            .text('Hover over points to sync with the globe');
-
-        const tickFormat = format('.2~f');
-
-        [
-            ['x', plot.xTicks, plot.xScale],
-            ['y', plot.yTicks, plot.yScale],
-        ].forEach(([axis, ticks, scale]) => {
-            const layer = svg.append('g').attr('class', 'pca-grid');
-            layer
-                .selectAll('line')
-                .data(ticks)
-                .join('line')
-                .attr('class', 'pca-grid-line')
-                .attr('x1', axis === 'x' ? (tick) => scale(tick) : plot.padding)
-                .attr('y1', axis === 'x' ? plot.padding : (tick) => scale(tick))
-                .attr('x2', axis === 'x' ? (tick) => scale(tick) : plot.plotWidth - plot.padding)
-                .attr('y2', axis === 'x' ? plot.plotHeight - plot.padding : (tick) => scale(tick));
-
-            const axisGroup = svg
-                .append('g')
-                .attr('transform', axis === 'x' ? `translate(0, ${plot.plotHeight - plot.padding})` : `translate(${plot.padding}, 0)`)
-                .call(
-                    (axis === 'x' ? axisBottom : axisLeft)(scale)
-                        .tickValues(ticks)
-                        .tickSize(6)
-                        .tickFormat(tickFormat)
-                );
-
-            axisGroup.selectAll('path').remove();
-            axisGroup.selectAll('.tick line').attr('class', 'pca-axis-tick');
-            axisGroup.selectAll('.tick text').attr('class', 'pca-axis-tick-label');
-        });
-
-        [
-            ['PC1', plot.plotWidth / 2, plot.plotHeight - 12, null, `PC1 (${((plot.explainedVariance[0] || 0) * 100).toFixed(1)}%)`],
-            ['PC2', 14, plot.plotHeight / 2, `rotate(-90 14 ${plot.plotHeight / 2})`, `PC2 (${((plot.explainedVariance[1] || 0) * 100).toFixed(1)}%)`],
-        ].forEach(([, x, y, transform, text]) => {
-            svg.append('text')
-                .attr('x', x)
-                .attr('y', y)
-                .attr('transform', transform)
-                .attr('text-anchor', 'middle')
-                .attr('class', 'pca-axis-label')
-                .text(text);
-        });
-
-        const brushLayer = svg.append('g').attr('class', 'pca-brush');
+    useEffect(() => {
+        if (!brushRef.current || !plot) return;
 
         const brushBehavior = brush()
             .extent([
@@ -253,18 +254,56 @@ export default function PCAWindow({
                 onBrushedCountriesChange?.(selectedCountries);
             });
 
+        const brushLayer = select(brushRef.current);
         brushLayer.call(brushBehavior);
 
-        const pointLayer = svg.append('g').attr('class', 'pca-points');
-        pointLayer
-            .selectAll('circle')
+        return () => {
+            brushLayer.on('.brush', null);
+        };
+    }, [plot, onBrushedCountriesChange]);
+
+    useEffect(() => {
+        if (!pointsRef.current || !plot) return;
+
+        const hoveredMapName = normalizeCountry(mapHoveredCountry);
+        const hoveredPcaName = normalizeCountry(tooltip.visible ? tooltip.label : '');
+        const brushedNames = brushedCountrySet || new Set();
+
+        select(pointsRef.current)
+            .selectAll('circle.pca-point')
             .data(plot.points, (point) => point.key)
             .join('circle')
+            .attr('class', 'pca-point')
             .attr('cx', (point) => point.cx)
             .attr('cy', (point) => point.cy)
-            .attr('r', 5)
-            .attr('class', 'pca-point')
+            .attr('r', (point) => {
+                const isActive =
+                    Boolean(hoveredMapName && normalizeCountry(point.country) === hoveredMapName) ||
+                    Boolean(hoveredPcaName && normalizeCountry(point.country) === hoveredPcaName) ||
+                    brushedNames.has(normalizeCountry(point.country));
+
+                return isActive ? 6 : 5;
+            })
+            .attr('fill', (point) => {
+                const value = getCountryMetric(
+                    pcaData,
+                    point.country,
+                    selectedVariable,
+                    selectedYear
+                );
+
+                return getCountryColorValue(value, selectedVariableData);
+            })
             .attr('filter', 'url(#pca-point-shadow)')
+            .classed('pca-point-map-hovered', (point) =>
+                Boolean(hoveredMapName && normalizeCountry(point.country) === hoveredMapName)
+            )
+            .classed('pca-point-pca-hovered', (point) =>
+                Boolean(hoveredPcaName && normalizeCountry(point.country) === hoveredPcaName)
+            )
+            .classed('pca-point-brushed', (point) =>
+                brushedNames.has(normalizeCountry(point.country))
+            )
             .on('mousemove', (event, point) => {
                 if (!panelRef.current) return;
                 const bounds = panelRef.current.getBoundingClientRect();
@@ -282,32 +321,18 @@ export default function PCAWindow({
                 setTooltip((prev) => ({ ...prev, visible: false }));
                 onCountryHover?.(null);
             });
-
-        return () => {
-            brushLayer.on('.brush', null);
-            svg.selectAll('*').remove();
-        };
-    }, [plot, onBrushedCountriesChange, onCountryHover]);
-
-    useEffect(() => {
-        if (!svgRef.current || !plot) return;
-
-        const svg = select(svgRef.current);
-        const hoveredMapName = normalizeCountry(mapHoveredCountry);
-        const hoveredPcaName = normalizeCountry(tooltip.visible ? tooltip.label : '');
-        const brushedNames = brushedCountrySet || new Set();
-
-        svg.selectAll('circle.pca-point')
-            .classed('pca-point-map-hovered', (point) =>
-                Boolean(hoveredMapName && normalizeCountry(point.country) === hoveredMapName)
-            )
-            .classed('pca-point-pca-hovered', (point) =>
-                Boolean(hoveredPcaName && normalizeCountry(point.country) === hoveredPcaName)
-            )
-            .classed('pca-point-brushed', (point) =>
-                brushedNames.has(normalizeCountry(point.country))
-            );
-    }, [plot, mapHoveredCountry, brushedCountrySet, tooltip.label, tooltip.visible]);
+    }, [
+        plot,
+        pcaData,
+        selectedVariable,
+        selectedYear,
+        selectedVariableData,
+        mapHoveredCountry,
+        brushedCountrySet,
+        tooltip.label,
+        tooltip.visible,
+        onCountryHover,
+    ]);
 
     const hideTooltip = () => {
         setTooltip((prev) => ({ ...prev, visible: false }));
@@ -336,7 +361,53 @@ export default function PCAWindow({
                             width="100%"
                             height="100%"
                             onMouseLeave={hideTooltip}
-                        />
+                        >
+                            <defs>
+                                <linearGradient id="pca-bg-gradient" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stopColor="#f7f3ea" />
+                                    <stop offset="48%" stopColor="#eef4ff" />
+                                    <stop offset="100%" stopColor="#fff8ef" />
+                                </linearGradient>
+                                <radialGradient id="pca-glow" cx="50%" cy="35%" r="70%">
+                                    <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
+                                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                                </radialGradient>
+                                <filter
+                                    id="pca-point-shadow"
+                                    x="-40%"
+                                    y="-40%"
+                                    width="180%"
+                                    height="180%"
+                                >
+                                    <feDropShadow
+                                        dx="0"
+                                        dy="2"
+                                        stdDeviation="2.2"
+                                        floodColor="#17315e"
+                                        floodOpacity="0.18"
+                                    />
+                                </filter>
+                            </defs>
+                            <rect
+                                width={plot.plotWidth}
+                                height={plot.plotHeight}
+                                fill="url(#pca-bg-gradient)"
+                                rx="12"
+                            />
+                            <rect
+                                width={plot.plotWidth}
+                                height={plot.plotHeight}
+                                fill="url(#pca-glow)"
+                                rx="12"
+                                opacity="0.85"
+                            />
+                            <g ref={captionRef} />
+                            <g ref={gridRef} className="pca-grid" />
+                            <g ref={axisRef} />
+                            <g ref={axisLabelRef} />
+                            <g ref={brushRef} className="pca-brush" />
+                            <g ref={pointsRef} className="pca-points" />
+                        </svg>
                     )}
                 </div>
             </div>
