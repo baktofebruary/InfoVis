@@ -21,5 +21,5 @@ def read_dataset(path: Path, convert_numeric = True) -> pd.DataFrame:
     return df
 
 if __name__ == "__main__":
-    df = read_dataset("data/country/estat_tipsho60.tsv")
+    df = read_dataset(Path("data/country/estat_tipsho60.tsv"))
     print(df.head(3))
