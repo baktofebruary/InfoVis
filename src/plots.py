@@ -1,5 +1,4 @@
 import plotly.express as px
-import plotly.graph_objects as go
 import altair as alt
 import streamlit as st
 import pandas as pd
@@ -17,6 +16,7 @@ def make_choropleth(df, input_id, input_column, color_theme):
         choropleth.update_layout(
             plot_bgcolor='rgba(0, 0, 0, 0)',
             paper_bgcolor='rgba(0, 0, 0, 0)',
+            margin=dict(l=0, r=0, t=0, b=0),
             clickmode='event+select'
         )
     else:
@@ -25,14 +25,14 @@ def make_choropleth(df, input_id, input_column, color_theme):
             plot_bgcolor='rgba(0, 0, 0, 0)',
             paper_bgcolor='rgba(0, 0, 0, 0)',
             margin=dict(l=0, r=0, t=0, b=0),
-            height=400,
             clickmode='event+select'
         )
 
     choropleth.update_geos(
         fitbounds="locations",
-        visible=False,
+        visible=False
     )
+
 
     return choropleth
 
@@ -45,12 +45,10 @@ def make_heatmap(input_df, input_y, input_x, input_color, color_theme):
                              scale=alt.Scale(scheme=color_theme)),
             stroke=alt.value('black'),
             strokeWidth=alt.value(0.25),
-        ).properties(width=900
         ).configure_axis(
             labelFontSize=12,
             titleFontSize=12
         )
-    # height=300
     return heatmap
 
 def make_lineplot(df, input_x, input_y, input_id):
@@ -74,20 +72,16 @@ def make_lineplot(df, input_x, input_y, input_id):
 
     return lineplot
 
-# Page 2
-
-def make_radarchart(input_df:pd.DataFrame, categories, country_list:list):
-    fig = go.Figure()
-
-    for selected_country in country_list:
-        filtered_df = input_df[input_df["country_name"] == selected_country]
-        fig.add_trace(
-            go.Scatterpolar(
-                r=filtered_df[categories].iloc[0].tolist(),
-                theta=categories,
-                fill='toself',
-                name = selected_country
-            )
+def make_scatterplot_anim(input_df:pd.DataFrame, input_x, input_y, color, size = None):
+    
+    fig = px.scatter(
+            input_df,
+            input_x,
+            input_y,
+            color=color,
+            animation_frame="year"
         )
-
-    return fig   
+    fig.update_layout(
+        showlegend=False
+    )
+    return fig
