@@ -1,0 +1,59 @@
+import streamlit as st
+from pathlib import Path
+import pandas as pd
+import preprocess as pp
+
+from plots import make_choropleth, make_heatmap, make_lineplot
+
+data_path = Path(__file__).resolve().parent.parent.parent / "data/final_dataset_draft.csv"
+raw = pd.read_csv(data_path)
+
+df = pp.iso2_to_iso3(raw)
+
+# Side Bar  
+with st.sidebar:
+    st.title('Cost of living Dashboard')
+    
+    year_list = list(df.year.unique())[::-1]
+    collumn_list = set(df.columns)
+    collumn_list.remove("year")
+    collumn_list.remove("iso3")
+    collumn_list.remove("country_name")
+
+    selected_year = st.selectbox('Select a year', year_list, index=0)
+    selected_var = st.selectbox('Select a variable', collumn_list, index=0)
+
+    df_selected_year = df[df.year == selected_year]
+
+    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
+    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
+
+col = st.columns((2.5, 1), gap='xsmall')
+
+with col[0]:
+    choropleth = make_choropleth(df_selected_year, "iso3", selected_var, selected_color_theme)
+    event = st.plotly_chart(choropleth, width="stretch", on_select="rerun")
+
+    selected_countries = []
+
+    if event and "selection" in event:
+        selected_points = event["selection"]["points"]
+        selected_countries = [p["location"] for p in selected_points]
+
+
+    if selected_countries:
+        df_line = df[
+            df["iso3"].isin(selected_countries)
+        ]
+    else:
+        df_line = pd.DataFrame()  # nothing selected
+
+    heatmap = make_heatmap(df, 'year', 'country_name', selected_var, selected_color_theme)
+    st.altair_chart(heatmap, width="stretch")
+
+with col[1]:
+    if not df_line.empty:
+        lineplot = make_lineplot(df_line, "year", selected_var, "country_name")
+        st.plotly_chart(lineplot, width="stretch")
+    else:
+        st.info("Select countries on the map to see trends")

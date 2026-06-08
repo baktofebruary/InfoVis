@@ -1,6 +1,8 @@
 import plotly.express as px
+import plotly.graph_objects as go
 import altair as alt
 import streamlit as st
+import pandas as pd
 
 # PAGE 1
 def make_choropleth(df, input_id, input_column, color_theme):
@@ -73,3 +75,21 @@ def make_lineplot(df, input_x, input_y, input_id):
     )
 
     return lineplot
+
+# Page 2
+
+def make_radarchart(input_df:pd.DataFrame, categories, country_list:list):
+    fig = go.Figure()
+
+    for selected_country in country_list:
+        filtered_df = input_df[input_df["country_name"] == selected_country]
+        fig.add_trace(
+            go.Scatterpolar(
+                r=filtered_df[categories].iloc[0].tolist(),
+                theta=categories,
+                fill='toself',
+                name = selected_country
+            )
+        )
+
+    return fig   
