@@ -72,6 +72,23 @@ def make_lineplot(df, input_x, input_y, input_id):
 
     return lineplot
 
+def make_scatterplot(input_df: pd.DataFrame, input_x, input_y, color):
+    scatterplot = px.scatter(
+        input_df,
+        x=input_x,
+        y=input_y,
+        color=color,
+        hover_name=color,
+        hover_data={
+            "year": True,
+            input_x: True,
+            input_y: True,
+            color: False,
+        }
+    )
+
+    return scatterplot
+
 def make_scatterplot_anim(input_df:pd.DataFrame, input_x, input_y, color, size = None):
     
     fig = px.scatter(

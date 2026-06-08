@@ -79,12 +79,28 @@ with top_container:
 middle_container = st.container(border=True)
 if not df_line1.empty and not df_line2.empty:
     middle_container.info("Please only select countries either from the drop-down menu or the map.")
-elif not df_line1.empty:
-    lineplot = ourplots.make_lineplot(df_line1, "year", selected_var, "country_name")
-    middle_container.plotly_chart(lineplot)
-elif not df_line2.empty:
-    lineplot = ourplots.make_lineplot(df_line2, "year", selected_var, "country_name")
-    middle_container.plotly_chart(lineplot)
+elif not df_line1.empty or not df_line2.empty:
+    df_selected_countries = df_line1 if not df_line1.empty else df_line2
+    line_col, scatter_col = middle_container.columns((1, 1), gap='small')
+
+    with line_col:
+        lineplot = ourplots.make_lineplot(df_selected_countries, "year", selected_var, "country_name")
+        st.plotly_chart(lineplot)
+
+    with scatter_col:
+        scatter_controls = st.columns((1, 1), gap='small')
+        with scatter_controls[0]:
+            scatter_var_x = st.selectbox("Select Variable X", collumn_list, index=0, key="scatter_var_x")
+        with scatter_controls[1]:
+            scatter_var_y = st.selectbox("Select Variable Y", collumn_list, index=1, key="scatter_var_y")
+
+        scatterplot = ourplots.make_scatterplot(
+            df_selected_countries,
+            scatter_var_x,
+            scatter_var_y,
+            "country_name"
+        )
+        st.plotly_chart(scatterplot)
 else:
     middle_container.info("Select countries on the map or the dropdown to see trends")
 
