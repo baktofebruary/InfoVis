@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_extras as ste
 from pathlib import Path
 import pandas as pd
 import preprocess as pp
@@ -10,36 +11,35 @@ raw = pd.read_csv(data_path)
 
 df = pp.iso2_to_iso3(raw)
 
-# Side Bar  
-with st.sidebar:
-    st.title('Cost of living Dashboard')
-    
-    year_list = list(df.year.unique())[::-1]
-    collumn_list = set(df.columns)
-    collumn_list.remove("year")
-    collumn_list.remove("iso3")
-    collumn_list.remove("country_name")
+year_list = list(df.year.unique())[::-1]
+collumn_list = set(df.columns)
+collumn_list.remove("year")
+collumn_list.remove("iso3")
+collumn_list.remove("country_name")
 
-    selected_year = st.selectbox('Select a year', year_list, index=0)
-    selected_var = st.selectbox('Select a variable', collumn_list, index=0)
-
-    df_selected_year = df[df.year == selected_year]
-
-    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
-    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
-
-col = st.columns((2.5, 1), gap='xsmall')
+top_container = st.container(border=False)
+col = top_container.columns((1, 3), gap='xsmall')
 
 with col[0]:
+    left_container = st.container(border=True)
+    selected_year = left_container.slider("Select a year", 2005, 2024, 2024)
+    df_selected_year = df[df.year == selected_year]
+
+    selected_var = left_container.selectbox('Select a variable', collumn_list, index=0)
+
+    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
+    selected_color_theme = left_container.selectbox('Select a color theme', color_theme_list)
+
+with col[1]:
+    right_container = st.container(border=True,horizontal_alignment="right")
     choropleth = make_choropleth(df_selected_year, "iso3", selected_var, selected_color_theme)
-    event = st.plotly_chart(choropleth, width="stretch", on_select="rerun")
+    event = right_container.plotly_chart(choropleth, width="stretch", on_select="rerun")
 
     selected_countries = []
 
     if event and "selection" in event:
         selected_points = event["selection"]["points"]
         selected_countries = [p["location"] for p in selected_points]
-
 
     if selected_countries:
         df_line = df[
@@ -48,12 +48,23 @@ with col[0]:
     else:
         df_line = pd.DataFrame()  # nothing selected
 
+with col[0]:
+    lb_container = st.container(border=True)
+    if not df_line.empty:
+        lineplot = make_lineplot(df_line, "year", selected_var, "country_name")
+        # Do not expand to fill the container
+        lb_container.plotly_chart(lineplot, height=416)
+    else:
+        lb_container.info("Select countries on the map to see trends")
+
+col = st.columns((2.5, 1), gap='xsmall')
+
+with col[0]:
     heatmap = make_heatmap(df, 'year', 'country_name', selected_var, selected_color_theme)
     st.altair_chart(heatmap, width="stretch")
 
 with col[1]:
-    if not df_line.empty:
-        lineplot = make_lineplot(df_line, "year", selected_var, "country_name")
-        st.plotly_chart(lineplot, width="stretch")
-    else:
-        st.info("Select countries on the map to see trends")
+    pass
+
+st.header("Raw Data")
+st.dataframe(df)
