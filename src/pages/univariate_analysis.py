@@ -77,6 +77,9 @@ with top_container:
         df_line2 = pd.DataFrame()  # nothing selected
 
 middle_container = st.container(border=True)
+df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
+df_average_line["country_name"] = "Average (all countries)"
+
 if not df_line1.empty and not df_line2.empty:
     middle_container.info("Please only select countries either from the drop-down menu or the map.")
 elif not df_line1.empty or not df_line2.empty:
@@ -84,15 +87,18 @@ elif not df_line1.empty or not df_line2.empty:
     line_col, scatter_col = middle_container.columns((1, 1), gap='small')
 
     with line_col:
-        lineplot = ourplots.make_lineplot(df_selected_countries, "year", selected_var, "country_name")
+        df_lineplot = pd.concat([df_selected_countries, df_average_line], ignore_index=True)
+        lineplot = ourplots.make_lineplot(df_lineplot, "year", selected_var, "country_name")
         st.plotly_chart(lineplot)
 
+#TODO later fix the variable selection
     with scatter_col:
         scatter_controls = st.columns((1, 1), gap='small')
         with scatter_controls[0]:
             scatter_var_x = st.selectbox("Select Variable X", collumn_list, index=0, key="scatter_var_x")
         with scatter_controls[1]:
-            scatter_var_y = st.selectbox("Select Variable Y", collumn_list, index=1, key="scatter_var_y")
+            # scatter_var_y = st.selectbox("Select Variable Y", collumn_list, index=1, key="scatter_var_y")
+            scatter_var_y = selected_var
 
         scatterplot = ourplots.make_scatterplot(
             df_selected_countries,
