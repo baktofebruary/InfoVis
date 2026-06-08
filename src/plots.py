@@ -36,6 +36,27 @@ def make_choropleth(df, input_id, input_column, color_theme):
 
     return choropleth
 
+def make_choropleth_anim(df, input_id, input_column, color_theme):
+    color_min = df[input_column].min()
+    color_max = df[input_column].max()
+
+    choropleth = px.choropleth(df,
+                    locations=input_id,
+                    locationmode="ISO-3",
+                    color=input_column,
+                    hover_name=input_id,
+                    animation_frame="year",
+                    color_continuous_scale=color_theme,
+                    range_color=(color_min, color_max)
+                    )
+
+    choropleth.update_geos(
+        fitbounds="locations",
+        visible=False
+    )
+
+    return choropleth
+
 def make_heatmap(input_df, input_y, input_x, input_color, color_theme):
     heatmap = alt.Chart(input_df).mark_rect().encode(
             y=alt.Y(f'{input_y}:O', sort='descending', axis=alt.Axis(title="Year", titleFontSize=18, titlePadding=15, titleFontWeight=900, labelAngle=0)),

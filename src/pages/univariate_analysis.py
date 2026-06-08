@@ -16,8 +16,8 @@ year_list = list(df.year.unique())[::-1]
 # collumn_list.remove("iso3")
 # collumn_list.remove("country_name")
 collumn_list = [
-    "housing_burden",
     "price_to_income_index",
+    "housing_burden",
     "house_price_index",
     "rent_price_index",
 ]
@@ -28,29 +28,25 @@ top_container = st.container(border=False)
 
 with top_container:
     controls_container = st.container(border=True)
-    control_cols = controls_container.columns((1, 1.4, 1.3, 1, 2), gap='small')
+    control_cols = controls_container.columns((1.4, 1.3, 1, 2), gap='small')
 
     with control_cols[0]:
-        selected_year = st.slider("Select a year", 2005, 2024, 2024)
-
-    with control_cols[1]:
         selected_var = st.selectbox('Select a variable', collumn_list, index=0)
 
-    with control_cols[2]:
+    with control_cols[1]:
         color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
         selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
-    with control_cols[3]:
+    with control_cols[2]:
         st.checkbox("Color blind mode")
 
-    with control_cols[4]:
+    with control_cols[3]:
         multisel_countries = st.multiselect(
             "You can also select countries here",
             df["iso3"].unique(),
             max_selections=5
         )
 
-    df_selected_year = df[df.year == selected_year]
     if multisel_countries:
         df_line1 = df[
             df["iso3"].isin(multisel_countries)
@@ -60,7 +56,7 @@ with top_container:
 
     map_container = st.container(border=True, horizontal_alignment="right")
     map_container.write("Select a country on the map!")
-    choropleth = ourplots.make_choropleth(df_selected_year, "iso3", selected_var, selected_color_theme)
+    choropleth = ourplots.make_choropleth_anim(df, "iso3", selected_var, selected_color_theme)
     event = map_container.plotly_chart(choropleth, width="stretch", height="stretch", on_select="rerun")
 
     selected_countries = []
