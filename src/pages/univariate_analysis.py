@@ -11,10 +11,10 @@ raw = pd.read_csv(data_path)
 df = pp.iso2_to_iso3(raw)
 
 year_list = list(df.year.unique())[::-1]
-# collumn_list = set(df.columns)
-# collumn_list.remove("year")
-# collumn_list.remove("iso3")
-# collumn_list.remove("country_name")
+collumn_list_full = set(df.columns)
+collumn_list_full.remove("year")
+collumn_list_full.remove("iso3")
+collumn_list_full.remove("country_name")
 collumn_list = [
     "price_to_income_index",
     "housing_burden",
@@ -91,7 +91,7 @@ elif not df_line1.empty or not df_line2.empty:
     with scatter_col:
         scatter_controls = st.columns((1, 1), gap='small')
         with scatter_controls[0]:
-            scatter_var_x = st.selectbox("Select Variable X", collumn_list, index=0, key="scatter_var_x")
+            scatter_var_x = st.selectbox("Select Variable X", collumn_list_full, index=0, key="scatter_var_x")
         with scatter_controls[1]:
             # scatter_var_y = st.selectbox("Select Variable Y", collumn_list, index=1, key="scatter_var_y")
             scatter_var_y = selected_var
