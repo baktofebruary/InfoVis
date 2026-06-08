@@ -27,11 +27,11 @@ def iso2_to_iso3(df_to_merge:pd.DataFrame)->pd.DataFrame:
     # merge on ISO2 column
     merged_df = df_to_merge.merge(
         df_map,
-        left_on="eurostat_iso2",
+        left_on="country",
         right_on="eurostat_iso2",
         how="left"
     )
-
+    merged_df = merged_df.drop(columns=["eurostat_iso2", "country"])
     return merged_df
 
 def read_dataset(path: Path, names_to_split:list, convert_numeric = True) -> pd.DataFrame:

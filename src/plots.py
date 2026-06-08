@@ -1,6 +1,7 @@
 import plotly.express as px
 import altair as alt
 import streamlit as st
+import pandas as pd
 
 # PAGE 1
 def make_choropleth(df, input_id, input_column, color_theme):
@@ -16,7 +17,6 @@ def make_choropleth(df, input_id, input_column, color_theme):
             plot_bgcolor='rgba(0, 0, 0, 0)',
             paper_bgcolor='rgba(0, 0, 0, 0)',
             margin=dict(l=0, r=0, t=0, b=0),
-            height=400,
             clickmode='event+select'
         )
     else:
@@ -25,14 +25,14 @@ def make_choropleth(df, input_id, input_column, color_theme):
             plot_bgcolor='rgba(0, 0, 0, 0)',
             paper_bgcolor='rgba(0, 0, 0, 0)',
             margin=dict(l=0, r=0, t=0, b=0),
-            height=400,
             clickmode='event+select'
         )
 
     choropleth.update_geos(
         fitbounds="locations",
-        visible=False,
+        visible=False
     )
+
 
     return choropleth
 
@@ -45,12 +45,10 @@ def make_heatmap(input_df, input_y, input_x, input_color, color_theme):
                              scale=alt.Scale(scheme=color_theme)),
             stroke=alt.value('black'),
             strokeWidth=alt.value(0.25),
-        ).properties(width=900
         ).configure_axis(
             labelFontSize=12,
             titleFontSize=12
         )
-    # height=300
     return heatmap
 
 def make_lineplot(df, input_x, input_y, input_id):
@@ -73,3 +71,17 @@ def make_lineplot(df, input_x, input_y, input_id):
     )
 
     return lineplot
+
+def make_scatterplot_anim(input_df:pd.DataFrame, input_x, input_y, color, size = None):
+    
+    fig = px.scatter(
+            input_df,
+            input_x,
+            input_y,
+            color=color,
+            animation_frame="year"
+        )
+    fig.update_layout(
+        showlegend=False
+    )
+    return fig
