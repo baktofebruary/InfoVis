@@ -1,4 +1,5 @@
 import plotly.express as px
+import plotly.graph_objects as go
 import altair as alt
 import streamlit as st
 import pandas as pd
@@ -56,6 +57,150 @@ def make_choropleth_anim(df, input_id, input_column, color_theme):
     )
 
     return choropleth
+
+def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
+    years = sorted(df["year"].dropna().unique())
+    color_min = df[input_column].min()
+    color_max = df[input_column].max()
+
+    def get_year_df(year):
+        return df[df["year"] == year].sort_values(input_column, ascending=False)
+
+    def make_choropleth_trace(year_df):
+        return go.Choropleth(
+            locations=year_df[input_id],
+            z=year_df[input_column],
+            text=year_df["country_name"],
+            geo="geo",
+            locationmode="ISO-3",
+            colorscale=color_theme,
+            zmin=color_min,
+            zmax=color_max,
+            colorbar=dict(title=input_column),
+            hovertemplate="%{text}<br>" + input_column + ": %{z}<extra></extra>",
+        )
+
+    def make_bar_trace(year_df):
+        return go.Bar(
+            x=year_df["country_name"],
+            y=year_df[input_column],
+            marker_color=year_df[input_column],
+            marker=dict(
+                color=year_df[input_column],
+                colorscale=color_theme,
+                cmin=color_min,
+                cmax=color_max,
+                showscale=False,
+            ),
+            xaxis="x",
+            yaxis="y",
+            hovertemplate="%{x}<br>" + input_column + ": %{y}<extra></extra>",
+        )
+
+    initial_year = years[0]
+    initial_df = get_year_df(initial_year)
+    fig = go.Figure(data=[
+        make_choropleth_trace(initial_df),
+        make_bar_trace(initial_df),
+    ])
+
+    fig.frames = [
+        go.Frame(
+            name=str(year),
+            data=[
+                make_choropleth_trace(get_year_df(year)),
+                make_bar_trace(get_year_df(year)),
+            ],
+            traces=[0, 1],
+        )
+        for year in years
+    ]
+
+    slider_steps = [
+        dict(
+            method="animate",
+            label=str(year),
+            args=[
+                [str(year)],
+                dict(mode="immediate", frame=dict(duration=500, redraw=True), transition=dict(duration=0)),
+            ],
+        )
+        for year in years
+    ]
+
+    layout_options = dict(
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+        margin=dict(l=10, r=10, t=120, b=40),
+        clickmode='event+select',
+        height=900,
+        showlegend=False,
+        geo=dict(
+            domain=dict(x=[0.0, 1.0], y=[0.43, 0.93]),
+            fitbounds="locations",
+            visible=False,
+        ),
+        xaxis=dict(
+            domain=[0.04, 0.98],
+            anchor="y",
+            tickangle=-45,
+            title="",
+        ),
+        yaxis=dict(
+            domain=[0.03, 0.34],
+            anchor="x",
+            title=input_column,
+            rangemode="tozero",
+        ),
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                x=0.0,
+                xanchor="left",
+                y=1.12,
+                yanchor="bottom",
+                showactive=False,
+                buttons=[
+                    dict(
+                        label="Play",
+                        method="animate",
+                        args=[
+                            None,
+                            dict(frame=dict(duration=700, redraw=True), transition=dict(duration=0), fromcurrent=True),
+                        ],
+                    ),
+                    dict(
+                        label="Pause",
+                        method="animate",
+                        args=[
+                            [None],
+                            dict(frame=dict(duration=0, redraw=False), mode="immediate", transition=dict(duration=0)),
+                        ],
+                    ),
+                ],
+            )
+        ],
+        sliders=[
+            dict(
+                active=0,
+                currentvalue=dict(prefix="Year: "),
+                x=0.16,
+                xanchor="left",
+                y=1.09,
+                yanchor="bottom",
+                len=0.82,
+                pad=dict(t=0, b=0),
+                steps=slider_steps,
+            )
+        ],
+    )
+    if st.context.theme.type != "light":
+        layout_options["template"] = "plotly_dark"
+
+    fig.update_layout(**layout_options)
+
+    return fig
 
 def make_heatmap(input_df, input_y, input_x, input_color, color_theme):
     heatmap = alt.Chart(input_df).mark_rect().encode(

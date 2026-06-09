@@ -56,14 +56,14 @@ with top_container:
 
     map_container = st.container(border=True, horizontal_alignment="right")
     map_container.write("Select a country on the map!")
-    choropleth = ourplots.make_choropleth_anim(df, "iso3", selected_var, selected_color_theme)
+    choropleth = ourplots.make_choropleth_bar_anim(df, "iso3", selected_var, selected_color_theme)
     event = map_container.plotly_chart(choropleth, width="stretch", height="stretch", on_select="rerun")
 
     selected_countries = []
 
     if event and "selection" in event:
         selected_points = event["selection"]["points"]
-        selected_countries = [p["location"] for p in selected_points]
+        selected_countries = [p["location"] for p in selected_points if "location" in p]
 
     if selected_countries:
         df_line2 = df[
