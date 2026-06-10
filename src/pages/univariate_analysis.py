@@ -10,15 +10,15 @@ ourplots = importlib.reload(ourplots)
 pp = importlib.reload(pp)
 
 data_path = Path(__file__).resolve().parent.parent.parent / "data/final_dataset_draft.csv"
-raw = pd.read_csv(data_path)
+raw_df = pd.read_csv(data_path)
 
-df = pp.iso2_to_iso3(raw)
+df = pp.iso2_to_iso3(raw_df)
 
 def get_selected_country_codes(event):
     if not event or "selection" not in event:
         return []
 
-    selected_codes = []
+    selected_country_codes = []
     for point in event["selection"]["points"]:
         country_code = point.get("location")
         if country_code is None:
@@ -28,10 +28,10 @@ def get_selected_country_codes(event):
             else:
                 country_code = custom_data
 
-        if country_code and country_code not in selected_codes:
-            selected_codes.append(country_code)
+        if country_code and country_code not in selected_country_codes:
+            selected_country_codes.append(country_code)
 
-    return selected_codes
+    return selected_country_codes
 
 def apply_pending_country_toggle(max_countries=5, valid_country_codes=None):
     pending_country_codes = st.session_state.pop("pending_country_toggle", [])
@@ -50,7 +50,7 @@ def apply_pending_country_toggle(max_countries=5, valid_country_codes=None):
 
     st.session_state["country_dropdown"] = current_countries
 
-def queue_country_toggle(country_codes, valid_country_codes=None):
+def queue_country_selection_toggle(country_codes, valid_country_codes=None):
     if not country_codes:
         return
 
@@ -75,12 +75,12 @@ def reset_selections(default_year):
 
 year_list = sorted(df.year.unique())
 data_country_codes = sorted(df["iso3"].dropna().unique())
-column_list_full = set(df.columns)
-column_list_full.remove("year")
-column_list_full.remove("iso3")
-column_list_full.remove("country_name")
-column_list_full.remove("housing_burden_category")
-column_list_full = sorted(column_list_full, key=ourplots.format_column_label)
+selectable_variable_columns = set(df.columns)
+selectable_variable_columns.remove("year")
+selectable_variable_columns.remove("iso3")
+selectable_variable_columns.remove("country_name")
+selectable_variable_columns.remove("housing_burden_category")
+selectable_variable_columns = sorted(selectable_variable_columns, key=ourplots.format_column_label)
 
 
 st.header("Group 43, Housing Affordability Across European Countries")
@@ -88,14 +88,14 @@ st.header("Group 43, Housing Affordability Across European Countries")
 apply_pending_country_toggle(valid_country_codes=data_country_codes)
 
 ##### CONTROLER #####
-top_container = st.container(border=True)
-control_cols = top_container.columns((1.4, 1.3, 1, 2, 1), gap='small')
+controls_container = st.container(border=True)
+control_cols = controls_container.columns((1.4, 1.3, 1, 2, 1), gap='small')
 selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
 
 with control_cols[0]:
     selected_var = st.selectbox(
         'Select a variable',
-        column_list_full,
+        selectable_variable_columns,
         index=0,
         format_func=ourplots.format_column_label
     )
@@ -116,7 +116,7 @@ with control_cols[2]:
     )
 
 with control_cols[3]:
-    multisel_countries = st.multiselect(
+    selected_country_codes = st.multiselect(
         "You can also select countries here",
         data_country_codes,
         max_selections=5,
@@ -130,12 +130,12 @@ with control_cols[4]:
         args=(max(year_list),)
     )
 
-df_selected_countries = df[df["iso3"].isin(multisel_countries)]
+df_selected_countries = df[df["iso3"].isin(selected_country_codes)]
 
 df_year = df[df["year"] == selected_year]
 df_map_year = pp.add_all_european_countries_for_map(df_year)
 color_range = (df[selected_var].min(), df[selected_var].max())
-highlighted_countries = multisel_countries
+highlighted_countries = selected_country_codes
 
 ##### CHOROPLETH MAP #####
 map_container = st.container(border=True, horizontal_alignment="right")
@@ -178,13 +178,13 @@ bar_selected_countries = get_selected_country_codes(bar_event)
 toggled_countries = list(dict.fromkeys(map_selected_countries + bar_selected_countries))
 
 if toggled_countries:
-    queue_country_toggle(toggled_countries, data_country_codes)
+    queue_country_selection_toggle(toggled_countries, data_country_codes)
 
 ##### LINE AND SCATTER PLOTS #####
-middle_container = st.container(border=True)
+line_scatter_container = st.container(border=True)
 
 if not df_selected_countries.empty:
-    line_col, scatter_col = middle_container.columns((1, 1), gap='small')
+    line_col, scatter_col = line_scatter_container.columns((1, 1), gap='small')
     
     df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
     df_average_line["country_name"] = "Average (all countries)"
@@ -197,7 +197,7 @@ if not df_selected_countries.empty:
 
     ##### SCATTER PLOT #####
     with scatter_col:
-        scatter_var_x = st.session_state.get("scatter_var_x", column_list_full[0])
+        scatter_var_x = st.session_state.get("scatter_var_x", selectable_variable_columns[0])
         scatter_var_y = selected_var
 
         scatterplot = ourplots.make_scatterplot(
@@ -210,13 +210,13 @@ if not df_selected_countries.empty:
 
         st.selectbox(
             "Select Variable X",
-            column_list_full,
-            index=column_list_full.index(scatter_var_x),
+            selectable_variable_columns,
+            index=selectable_variable_columns.index(scatter_var_x),
             key="scatter_var_x",
             format_func=ourplots.format_column_label
         )
 else:
-    middle_container.info("Select countries on the map, bar chart, or dropdown to see trends")
+    line_scatter_container.info("Select countries on the map, bar chart, or dropdown to see trends")
 
 ##### HEATMAP AND PIE CHART #####
 heatmap_container = st.container(border=True)
