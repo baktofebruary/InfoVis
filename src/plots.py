@@ -241,7 +241,7 @@ def make_housing_overburden_category_heatmap(df, selected_year=None, selected_co
 
     return heatmap
 
-def make_housing_burden_category_pie(df_year, color_theme=None):
+def make_housing_overburden_category_pie(df_year, color_theme=None):
     category_order, category_colors = get_housing_overburden_category_style(color_theme)
     category_counts = (
         df_year["housing_burden_category"]

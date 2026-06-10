@@ -73,6 +73,7 @@ st.header("Group 43, Cost of living Analysis")
 
 apply_pending_country_toggle()
 
+##### CONTROLER #####
 top_container = st.container(border=True)
 control_cols = top_container.columns((1.4, 1.3, 1, 2, 1), gap='small')
 selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
@@ -121,6 +122,7 @@ df_year = df[df["year"] == selected_year]
 color_range = (df[selected_var].min(), df[selected_var].max())
 highlighted_countries = multisel_countries
 
+##### CHOROPLETH MAP #####
 map_container = st.container(border=True, horizontal_alignment="right")
 map_container.write(f"Select a country on the map! Year: {selected_year}")
 choropleth = ourplots.make_choropleth(
@@ -139,6 +141,7 @@ map_event = map_container.plotly_chart(
     on_select="rerun"
 )
 
+##### BAR CHART #####
 bar_container = st.container(border=True)
 bar_container.write(f"All countries by {selected_var_label} in {selected_year}")
 bar_chart = ourplots.make_country_bar_chart(
@@ -162,6 +165,7 @@ toggled_countries = list(dict.fromkeys(map_selected_countries + bar_selected_cou
 if toggled_countries:
     queue_country_toggle(toggled_countries)
 
+##### LINE AND SCATTER PLOTS #####
 middle_container = st.container(border=True)
 
 if not df_selected_countries.empty:
@@ -170,22 +174,15 @@ if not df_selected_countries.empty:
     df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
     df_average_line["country_name"] = "Average (all countries)"
 
+    ##### LINE PLOT #####
     with line_col:
         df_lineplot = pd.concat([df_selected_countries, df_average_line], ignore_index=True)
         lineplot = ourplots.make_lineplot(df_lineplot, "year", selected_var, "country_name")
         st.plotly_chart(lineplot)
 
+    ##### SCATTER PLOT #####
     with scatter_col:
-        scatter_controls = st.columns((1, 1), gap='small')
-        with scatter_controls[0]:
-            scatter_var_x = st.selectbox(
-                "Select Variable X",
-                column_list_full,
-                index=0,
-                key="scatter_var_x",
-                format_func=ourplots.format_column_label
-            )
-        
+        scatter_var_x = st.session_state.get("scatter_var_x", column_list_full[0])
         scatter_var_y = selected_var
 
         scatterplot = ourplots.make_scatterplot(
@@ -195,14 +192,24 @@ if not df_selected_countries.empty:
             "country_name"
         )
         st.plotly_chart(scatterplot)
+
+        st.selectbox(
+            "Select Variable X",
+            column_list_full,
+            index=column_list_full.index(scatter_var_x),
+            key="scatter_var_x",
+            format_func=ourplots.format_column_label
+        )
 else:
     middle_container.info("Select countries on the map, bar chart, or dropdown to see trends")
 
+##### HEATMAP AND PIE CHART #####
 heatmap_container = st.container(border=True)
 heatmap_container.header("Housing Overburden by Country and Year")
 heatmap_col, pie_col = heatmap_container.columns((1.7, 1), gap='small')
 _, category_colors = ourplots.get_housing_overburden_category_style(selected_color_theme)
 
+##### HEATMAP #####
 with heatmap_col:
     st.markdown(
         f"""
@@ -222,14 +229,15 @@ with heatmap_col:
     )
     st.plotly_chart(heatmap, width="stretch")
 
+##### PIE CHART #####
 with pie_col:
     st.markdown(
         f"""
         <div style="display:flex; align-items:center; margin:0 0 8px 0; font-size:0.9rem;">
-            <span>Housing Overburden Categories in <b>{selected_year}</b></span>
+            <span>Housing Overburden in Europe in <b>{selected_year}</b></span>
         </div>
         """,
         unsafe_allow_html=True
     )
-    pie = ourplots.make_housing_burden_category_pie(df_year, selected_color_theme)
+    pie = ourplots.make_housing_overburden_category_pie(df_year, selected_color_theme)
     st.plotly_chart(pie, width="stretch")
