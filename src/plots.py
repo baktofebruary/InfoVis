@@ -5,14 +5,28 @@ import streamlit as st
 import pandas as pd
 
 # PAGE 1
-def make_choropleth(df, input_id, input_column, color_theme):
+def make_choropleth(df, input_id, input_column, color_theme, color_range=None, selected_countries=None):
+    selected_countries = selected_countries or []
     choropleth = px.choropleth(df,
                     locations=input_id,
                     locationmode="ISO-3",
                     color=input_column,
                     hover_name=input_id,
-                    color_continuous_scale=color_theme
+                    color_continuous_scale=color_theme,
+                    range_color=color_range
                     )
+    if selected_countries:
+        selected_points = [
+            point_index
+            for point_index, country_code in enumerate(df[input_id])
+            if country_code in selected_countries
+        ]
+        choropleth.update_traces(
+            selectedpoints=selected_points,
+            selected=dict(marker=dict(opacity=1)),
+            unselected=dict(marker=dict(opacity=0.35)),
+        )
+
     if st.context.theme.type == "light":
         choropleth.update_layout(
             plot_bgcolor='rgba(0, 0, 0, 0)',
@@ -36,6 +50,65 @@ def make_choropleth(df, input_id, input_column, color_theme):
 
 
     return choropleth
+
+def make_country_bar_chart(df, input_id, input_column, color_theme, color_range=None, selected_countries=None):
+    selected_countries = selected_countries or []
+    bar_df = df.dropna(subset=[input_column]).sort_values(input_column, ascending=False).copy()
+    selected_df = bar_df[bar_df[input_id].isin(selected_countries)]
+
+    bar_chart = go.Figure()
+    bar_chart.add_trace(
+        go.Bar(
+            x=bar_df["country_name"],
+            y=bar_df[input_column],
+            customdata=bar_df[input_id],
+            marker=dict(
+                color=bar_df[input_column],
+                colorscale=color_theme,
+                cmin=color_range[0] if color_range else None,
+                cmax=color_range[1] if color_range else None,
+                colorbar=dict(title=input_column),
+            ),
+            hovertemplate=(
+                "%{x}<br>"
+                "ISO3: %{customdata}<br>"
+                + input_column + ": %{y}<extra></extra>"
+            ),
+            selectedpoints=[
+                point_index
+                for point_index, country_code in enumerate(bar_df[input_id])
+                if country_code in selected_countries
+            ] if selected_countries else None,
+            selected=dict(marker=dict(opacity=1)),
+            unselected=dict(marker=dict(opacity=0.25 if selected_countries else 1)),
+        )
+    )
+    bar_chart.add_trace(
+        go.Bar(
+            x=selected_df["country_name"],
+            y=selected_df[input_column],
+            customdata=selected_df[input_id],
+            marker=dict(
+                color="rgba(0,0,0,0)",
+                line=dict(color="#111111", width=3),
+            ),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+
+    bar_chart.update_layout(
+        barmode="overlay",
+        showlegend=False,
+        margin=dict(l=10, r=10, t=10, b=80),
+        xaxis=dict(title="", tickangle=-45),
+        yaxis=dict(title=input_column, rangemode="tozero"),
+        height=430,
+    )
+    if st.context.theme.type != "light":
+        bar_chart.update_layout(template="plotly_dark")
+
+    return bar_chart
 
 def make_choropleth_anim(df, input_id, input_column, color_theme):
     color_min = df[input_column].min()

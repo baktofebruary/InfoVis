@@ -32,7 +32,7 @@ def get_selected_country_codes(event):
 
     return selected_codes
 
-year_list = list(df.year.unique())[::-1]
+year_list = sorted(df.year.unique())
 collumn_list_full = set(df.columns)
 collumn_list_full.remove("year")
 collumn_list_full.remove("iso3")
@@ -51,7 +51,7 @@ top_container = st.container(border=False)
 
 with top_container:
     controls_container = st.container(border=True)
-    control_cols = controls_container.columns((1.4, 1.3, 1, 2), gap='small')
+    control_cols = controls_container.columns((1.4, 1.3, 1, 1, 2), gap='small')
 
     with control_cols[0]:
         selected_var = st.selectbox('Select a variable', collumn_list, index=0)
@@ -64,6 +64,15 @@ with top_container:
         st.checkbox("Color blind mode")
 
     with control_cols[3]:
+        selected_year = st.slider(
+            "Year",
+            min_value=int(min(year_list)),
+            max_value=int(max(year_list)),
+            value=int(max(year_list)),
+            step=1
+        )
+
+    with control_cols[4]:
         multisel_countries = st.multiselect(
             "You can also select countries here",
             df["iso3"].unique(),
@@ -77,31 +86,55 @@ with top_container:
     else:
         df_line1 = pd.DataFrame()
 
-    map_container = st.container(border=True, horizontal_alignment="right")
-    map_container.write("Select a country on the map!")
+    df_year = df[df["year"] == selected_year]
+    color_range = (df[selected_var].min(), df[selected_var].max())
     selected_countries = st.session_state.get("selected_countries_from_chart", [])
     highlighted_countries = list(dict.fromkeys(multisel_countries + selected_countries))
-    choropleth = ourplots.make_choropleth_bar_anim(
-        df,
+
+    map_container = st.container(border=True, horizontal_alignment="right")
+    map_container.write(f"Select a country on the map! Year: {selected_year}")
+    choropleth = ourplots.make_choropleth(
+        df_year,
         "iso3",
         selected_var,
         selected_color_theme,
+        color_range,
         highlighted_countries
     )
-    event = map_container.plotly_chart(
+    map_event = map_container.plotly_chart(
         choropleth,
         width="stretch",
         height="stretch",
-        key="country_map_bar_chart",
+        key="country_map_chart",
         on_select="rerun"
     )
 
-    updated_selected_countries = get_selected_country_codes(event)
-    if updated_selected_countries != selected_countries:
+    bar_container = st.container(border=True)
+    bar_container.write(f"All countries by {selected_var.replace('_', ' ')} in {selected_year}")
+    bar_chart = ourplots.make_country_bar_chart(
+        df_year,
+        "iso3",
+        selected_var,
+        selected_color_theme,
+        color_range,
+        highlighted_countries
+    )
+    bar_event = bar_container.plotly_chart(
+        bar_chart,
+        width="stretch",
+        key="country_bar_chart",
+        on_select="rerun"
+    )
+
+    map_selected_countries = get_selected_country_codes(map_event)
+    bar_selected_countries = get_selected_country_codes(bar_event)
+    updated_selected_countries = list(dict.fromkeys(map_selected_countries + bar_selected_countries))
+
+    if updated_selected_countries and updated_selected_countries != selected_countries:
         st.session_state["selected_countries_from_chart"] = updated_selected_countries
         st.rerun()
 
-    selected_countries = updated_selected_countries
+    selected_countries = updated_selected_countries or selected_countries
 
     if selected_countries:
         df_line2 = df[
