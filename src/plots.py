@@ -329,61 +329,148 @@ def make_heatmap(input_df, input_y, input_x, input_color, color_theme):
         )
     return heatmap
 
-def make_housing_burden_category_heatmap(df):
-    category_order = ["Low", "Medium", "High"]
-    category_colors = {
+def get_housing_burden_category_style():
+    return ["Low", "Medium", "High"], {
         "Low": "#2ca25f",
         "Medium": "#feb24c",
         "High": "#de2d26",
     }
-    heatmap_df = df.sort_values(["country_name", "year"]).copy()
-    heatmap_df["housing_burden_category"] = pd.Categorical(
-        heatmap_df["housing_burden_category"],
-        categories=category_order,
-        ordered=True,
-    )
 
-    heatmap = px.scatter(
-        heatmap_df,
-        x="year",
-        y="country_name",
-        color="housing_burden_category",
-        color_discrete_map=category_colors,
-        category_orders={
-            "housing_burden_category": category_order,
-            "year": sorted(heatmap_df["year"].unique()),
-            "country_name": sorted(heatmap_df["country_name"].unique(), reverse=True),
-        },
-        symbol_sequence=["square"],
-        hover_name="country_name",
-        hover_data={
-            "year": True,
-            "housing_burden_category": True,
-            "country_name": False,
-        },
-        labels={
-            "year": "Year",
-            "country_name": "Country",
-            "housing_burden_category": "Housing Burden",
-        },
+def make_housing_burden_category_heatmap(df, selected_year=None, selected_countries=None):
+    selected_countries = selected_countries or []
+    category_order, category_colors = get_housing_burden_category_style()
+    heatmap_df = df.sort_values(["country_name", "year"]).copy()
+    category_codes = {category: index for index, category in enumerate(category_order)}
+    years = sorted(heatmap_df["year"].unique())
+    countries = sorted(heatmap_df["country_name"].unique(), reverse=True)
+    year_positions = list(range(len(years)))
+    country_positions = list(range(len(countries)))
+
+    category_grid = (
+        heatmap_df
+        .pivot(index="country_name", columns="year", values="housing_burden_category")
+        .reindex(index=countries, columns=years)
     )
-    heatmap.update_traces(marker=dict(size=18), selector=dict(mode="markers"))
+    code_grid = category_grid.apply(lambda column: column.map(category_codes)).astype(float)
+    label_grid = category_grid.replace({
+        "Low": "L",
+        "Medium": "M",
+        "High": "H",
+    })
+    hover_grid = [
+        [
+            [country, year, category_grid.loc[country, year]]
+            for year in years
+        ]
+        for country in countries
+    ]
+
+    heatmap = go.Figure(
+        data=go.Heatmap(
+            z=code_grid,
+            x=year_positions,
+            y=country_positions,
+            customdata=hover_grid,
+            text=label_grid,
+            texttemplate="%{text}",
+            textfont=dict(color="#111111", size=10),
+            colorscale=[
+                [0.0, category_colors["Low"]],
+                [0.3333, category_colors["Low"]],
+                [0.3334, category_colors["Medium"]],
+                [0.6666, category_colors["Medium"]],
+                [0.6667, category_colors["High"]],
+                [1.0, category_colors["High"]],
+            ],
+            zmin=0,
+            zmax=2,
+            colorbar=dict(
+                title="Housing Burden",
+                tickmode="array",
+                tickvals=[0, 1, 2],
+                ticktext=category_order,
+            ),
+            hovertemplate=(
+                "Country: %{customdata[0]}<br>"
+                "Year: %{customdata[1]}<br>"
+                "Housing Burden: %{customdata[2]}<extra></extra>"
+            ),
+        )
+    )
+    if selected_year in years:
+        selected_year_index = years.index(selected_year)
+        heatmap.add_shape(
+            type="rect",
+            x0=selected_year_index - 0.5,
+            x1=selected_year_index + 0.5,
+            y0=-0.5,
+            y1=len(countries) - 0.5,
+            xref="x",
+            yref="y",
+            line=dict(color="#111111", width=3),
+            fillcolor="rgba(0,0,0,0)",
+        )
+
+    selected_country_names = (
+        heatmap_df[heatmap_df["iso3"].isin(selected_countries)]["country_name"]
+        .dropna()
+        .unique()
+    )
+    for country_name in selected_country_names:
+        if country_name in countries:
+            country_index = countries.index(country_name)
+            heatmap.add_shape(
+                type="rect",
+                x0=-0.5,
+                x1=len(years) - 0.5,
+                y0=country_index - 0.5,
+                y1=country_index + 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="#111111", width=3),
+                fillcolor="rgba(0,0,0,0)",
+            )
+
     heatmap.update_layout(
         margin=dict(l=0, r=0, t=10, b=0),
-        legend=dict(
-            title="Housing Burden",
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-        ),
-        xaxis=dict(type="category", tickangle=0),
-        yaxis=dict(title="", automargin=True),
-        height=720,
+        xaxis=dict(tickmode="array", tickvals=year_positions, ticktext=years, tickangle=0),
+        yaxis=dict(title="", tickmode="array", tickvals=country_positions, ticktext=countries, automargin=True),
+        height=500,
     )
 
     return heatmap
+
+def make_housing_burden_category_pie(df_year):
+    category_order, category_colors = get_housing_burden_category_style()
+    category_counts = (
+        df_year["housing_burden_category"]
+        .value_counts()
+        .reindex(category_order, fill_value=0)
+        .reset_index()
+    )
+    category_counts.columns = ["housing_burden_category", "count"]
+    category_counts = category_counts[category_counts["count"] > 0]
+
+    pie = px.pie(
+        category_counts,
+        names="housing_burden_category",
+        values="count",
+        color="housing_burden_category",
+        color_discrete_map=category_colors,
+        category_orders={"housing_burden_category": category_order},
+        hole=0.35,
+    )
+    pie.update_traces(
+        textinfo="label+percent",
+        hovertemplate="%{label}<br>Countries: %{value}<br>%{percent}<extra></extra>",
+    )
+    pie.update_layout(
+        showlegend=False,
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=500,
+    )
+
+    return pie
 
 def make_lineplot(df, input_x, input_y, input_id):
     lineplot = px.line(

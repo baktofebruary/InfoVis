@@ -179,8 +179,16 @@ else:
 
 heatmap_container = st.container(border=True)
 heatmap_container.header("Housing Burden Category by Country and Year")
-heatmap = ourplots.make_housing_burden_category_heatmap(df)
-heatmap_container.plotly_chart(heatmap, width="stretch")
+heatmap_col, pie_col = heatmap_container.columns((1.7, 1), gap='small')
+
+with heatmap_col:
+    heatmap = ourplots.make_housing_burden_category_heatmap(df, selected_year, highlighted_countries)
+    st.plotly_chart(heatmap, width="stretch")
+
+with pie_col:
+    # st.write(f"Housing Burden Categories in {selected_year}")
+    pie = ourplots.make_housing_burden_category_pie(df_year)
+    st.plotly_chart(pie, width="stretch")
 
 ac = st.container(border=True)
 ac.header("Animations")
