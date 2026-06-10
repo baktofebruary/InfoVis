@@ -58,7 +58,8 @@ def make_choropleth_anim(df, input_id, input_column, color_theme):
 
     return choropleth
 
-def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
+def make_choropleth_bar_anim(df, input_id, input_column, color_theme, selected_countries=None):
+    selected_countries = selected_countries or []
     years = sorted(df["year"].dropna().unique())
     color_min = df[input_column].min()
     color_max = df[input_column].max()
@@ -66,11 +67,22 @@ def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
     def get_year_df(year):
         return df[df["year"] == year].sort_values(input_column, ascending=False)
 
+    def get_selected_points(year_df):
+        if not selected_countries:
+            return None
+
+        return [
+            point_index
+            for point_index, country_code in enumerate(year_df[input_id])
+            if country_code in selected_countries
+        ]
+
     def make_choropleth_trace(year_df):
         return go.Choropleth(
             locations=year_df[input_id],
             z=year_df[input_column],
             text=year_df["country_name"],
+            customdata=year_df[input_id],
             geo="geo",
             locationmode="ISO-3",
             colorscale=color_theme,
@@ -78,12 +90,16 @@ def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
             zmax=color_max,
             colorbar=dict(title=input_column),
             hovertemplate="%{text}<br>" + input_column + ": %{z}<extra></extra>",
+            selectedpoints=get_selected_points(year_df),
+            selected=dict(marker=dict(opacity=1)),
+            unselected=dict(marker=dict(opacity=0.35 if selected_countries else 1)),
         )
 
     def make_bar_trace(year_df):
         return go.Bar(
             x=year_df["country_name"],
             y=year_df[input_column],
+            customdata=year_df[input_id],
             marker_color=year_df[input_column],
             marker=dict(
                 color=year_df[input_column],
@@ -95,6 +111,26 @@ def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
             xaxis="x",
             yaxis="y",
             hovertemplate="%{x}<br>" + input_column + ": %{y}<extra></extra>",
+            selectedpoints=get_selected_points(year_df),
+            selected=dict(marker=dict(opacity=1)),
+            unselected=dict(marker=dict(opacity=0.25 if selected_countries else 1)),
+        )
+
+    def make_bar_highlight_trace(year_df):
+        selected_df = year_df[year_df[input_id].isin(selected_countries)]
+
+        return go.Bar(
+            x=selected_df["country_name"],
+            y=selected_df[input_column],
+            customdata=selected_df[input_id],
+            marker=dict(
+                color="rgba(0,0,0,0)",
+                line=dict(color="#111111", width=3),
+            ),
+            xaxis="x",
+            yaxis="y",
+            hoverinfo="skip",
+            showlegend=False,
         )
 
     initial_year = years[0]
@@ -102,6 +138,7 @@ def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
     fig = go.Figure(data=[
         make_choropleth_trace(initial_df),
         make_bar_trace(initial_df),
+        make_bar_highlight_trace(initial_df),
     ])
 
     fig.frames = [
@@ -110,8 +147,9 @@ def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
             data=[
                 make_choropleth_trace(get_year_df(year)),
                 make_bar_trace(get_year_df(year)),
+                make_bar_highlight_trace(get_year_df(year)),
             ],
-            traces=[0, 1],
+            traces=[0, 1, 2],
         )
         for year in years
     ]
@@ -135,6 +173,7 @@ def make_choropleth_bar_anim(df, input_id, input_column, color_theme):
         clickmode='event+select',
         height=900,
         showlegend=False,
+        barmode="overlay",
         geo=dict(
             domain=dict(x=[0.0, 1.0], y=[0.43, 0.93]),
             fitbounds="locations",

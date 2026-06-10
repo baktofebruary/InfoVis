@@ -1,14 +1,36 @@
 import streamlit as st
+import importlib
 from pathlib import Path
 import pandas as pd
 
 import preprocess as pp
 import plots as ourplots
 
+ourplots = importlib.reload(ourplots)
+
 data_path = Path(__file__).resolve().parent.parent.parent / "data/final_dataset_draft.csv"
 raw = pd.read_csv(data_path)
 
 df = pp.iso2_to_iso3(raw)
+
+def get_selected_country_codes(event):
+    if not event or "selection" not in event:
+        return []
+
+    selected_codes = []
+    for point in event["selection"]["points"]:
+        country_code = point.get("location")
+        if country_code is None:
+            custom_data = point.get("customdata")
+            if isinstance(custom_data, (list, tuple)) and custom_data:
+                country_code = custom_data[0]
+            else:
+                country_code = custom_data
+
+        if country_code and country_code not in selected_codes:
+            selected_codes.append(country_code)
+
+    return selected_codes
 
 year_list = list(df.year.unique())[::-1]
 collumn_list_full = set(df.columns)
@@ -16,8 +38,8 @@ collumn_list_full.remove("year")
 collumn_list_full.remove("iso3")
 collumn_list_full.remove("country_name")
 collumn_list = [
-    "price_to_income_index",
-    "housing_burden",
+    "house_price_to_income_index",
+    "housing_overburden",
     "house_price_index",
     "rent_price_index",
 ]
@@ -34,7 +56,7 @@ with top_container:
         selected_var = st.selectbox('Select a variable', collumn_list, index=0)
 
     with control_cols[1]:
-        color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
+        color_theme_list = ['greens', 'blues', 'cividis', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
         selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
     with control_cols[2]:
@@ -56,14 +78,29 @@ with top_container:
 
     map_container = st.container(border=True, horizontal_alignment="right")
     map_container.write("Select a country on the map!")
-    choropleth = ourplots.make_choropleth_bar_anim(df, "iso3", selected_var, selected_color_theme)
-    event = map_container.plotly_chart(choropleth, width="stretch", height="stretch", on_select="rerun")
+    selected_countries = st.session_state.get("selected_countries_from_chart", [])
+    highlighted_countries = list(dict.fromkeys(multisel_countries + selected_countries))
+    choropleth = ourplots.make_choropleth_bar_anim(
+        df,
+        "iso3",
+        selected_var,
+        selected_color_theme,
+        highlighted_countries
+    )
+    event = map_container.plotly_chart(
+        choropleth,
+        width="stretch",
+        height="stretch",
+        key="country_map_bar_chart",
+        on_select="rerun"
+    )
 
-    selected_countries = []
+    updated_selected_countries = get_selected_country_codes(event)
+    if updated_selected_countries != selected_countries:
+        st.session_state["selected_countries_from_chart"] = updated_selected_countries
+        st.rerun()
 
-    if event and "selection" in event:
-        selected_points = event["selection"]["points"]
-        selected_countries = [p["location"] for p in selected_points if "location" in p]
+    selected_countries = updated_selected_countries
 
     if selected_countries:
         df_line2 = df[
