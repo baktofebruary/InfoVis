@@ -24,7 +24,7 @@ def make_choropleth(df, input_id, input_column, color_theme, color_range=None, s
         choropleth.update_traces(
             selectedpoints=selected_points,
             selected=dict(marker=dict(opacity=1)),
-            unselected=dict(marker=dict(opacity=0.35)),
+            unselected=dict(marker=dict(opacity=0.25)),
         )
 
     if st.context.theme.type == "light":

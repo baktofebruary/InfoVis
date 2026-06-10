@@ -32,6 +32,28 @@ def get_selected_country_codes(event):
 
     return selected_codes
 
+def apply_pending_country_toggle(max_countries=5):
+    pending_country_codes = st.session_state.pop("pending_country_toggle", [])
+    if not pending_country_codes:
+        return
+
+    current_countries = list(st.session_state.get("country_dropdown", []))
+    for country_code in pending_country_codes:
+        if country_code in current_countries:
+            current_countries.remove(country_code)
+        elif len(current_countries) < max_countries:
+            current_countries.append(country_code)
+
+    st.session_state["country_dropdown"] = current_countries
+
+def queue_country_toggle(country_codes):
+    if not country_codes:
+        return
+
+    st.session_state["pending_country_toggle"] = list(dict.fromkeys(country_codes))
+    st.session_state["selection_reset_nonce"] = st.session_state.get("selection_reset_nonce", 0) + 1
+    st.rerun()
+
 year_list = sorted(df.year.unique())
 collumn_list_full = set(df.columns)
 collumn_list_full.remove("year")
@@ -50,6 +72,8 @@ st.header("Group X, Cost of living Analysis")
 top_container = st.container(border=False)
 
 with top_container:
+    apply_pending_country_toggle()
+
     controls_container = st.container(border=True)
     control_cols = controls_container.columns((1.4, 1.3, 1, 1, 2), gap='small')
     selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
@@ -63,8 +87,8 @@ with top_container:
 
     with control_cols[2]:
         if st.button("Reset selections"):
-            st.session_state["selected_countries_from_chart"] = []
             st.session_state["country_dropdown"] = []
+            st.session_state["pending_country_toggle"] = []
             st.session_state["selected_year"] = int(max(year_list))
             st.session_state["selection_reset_nonce"] = selection_reset_nonce + 1
             st.rerun()
@@ -96,8 +120,7 @@ with top_container:
 
     df_year = df[df["year"] == selected_year]
     color_range = (df[selected_var].min(), df[selected_var].max())
-    selected_countries = st.session_state.get("selected_countries_from_chart", [])
-    highlighted_countries = list(dict.fromkeys(multisel_countries + selected_countries))
+    highlighted_countries = multisel_countries
 
     map_container = st.container(border=True, horizontal_alignment="right")
     map_container.write(f"Select a country on the map! Year: {selected_year}")
@@ -136,20 +159,12 @@ with top_container:
 
     map_selected_countries = get_selected_country_codes(map_event)
     bar_selected_countries = get_selected_country_codes(bar_event)
-    updated_selected_countries = list(dict.fromkeys(map_selected_countries + bar_selected_countries))
+    toggled_countries = list(dict.fromkeys(map_selected_countries + bar_selected_countries))
 
-    if updated_selected_countries and updated_selected_countries != selected_countries:
-        st.session_state["selected_countries_from_chart"] = updated_selected_countries
-        st.rerun()
+    if toggled_countries:
+        queue_country_toggle(toggled_countries)
 
-    selected_countries = updated_selected_countries or selected_countries
-
-    if selected_countries:
-        df_line2 = df[
-            df["iso3"].isin(selected_countries)
-        ]
-    else:
-        df_line2 = pd.DataFrame()  # nothing selected
+    df_line2 = pd.DataFrame()
 
 middle_container = st.container(border=True)
 df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
