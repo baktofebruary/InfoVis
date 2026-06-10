@@ -68,7 +68,7 @@ collumn_list = [
 ]
 
 
-st.header("Group X, Cost of living Analysis")
+st.header("Group 43, Cost of living Analysis")
 top_container = st.container(border=False)
 
 with top_container:
