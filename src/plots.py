@@ -26,26 +26,79 @@ def format_column_label(column_name):
 def make_choropleth(df, input_id, input_column, color_theme, color_range=None, selected_countries=None):
     selected_countries = selected_countries or []
     input_label = format_column_label(input_column)
-    choropleth = px.choropleth(df,
-                    locations=input_id,
-                    locationmode="ISO-3",
-                    color=input_column,
-                    hover_name="country_name" if "country_name" in df.columns else input_id,
-                    color_continuous_scale=color_theme,
-                    range_color=color_range,
-                    labels={input_column: input_label}
-                    )
+    data_df = df.dropna(subset=[input_column])
+    base_df = df[~df[input_id].isin(data_df[input_id])]
+    base_country_labels = base_df["country_name"] if "country_name" in base_df.columns else base_df[input_id]
+
+    choropleth = go.Figure()
+    if not base_df.empty:
+        choropleth.add_trace(
+            go.Choropleth(
+                locations=base_df[input_id],
+                locationmode="ISO-3",
+                z=[0] * len(base_df),
+                text=base_country_labels,
+                customdata=base_df[input_id],
+                colorscale=[[0, "#5c5b5b"], [1, "#5c5b5b"]],
+                showscale=False,
+                marker_line_color="#ffffff",
+                marker_line_width=0.5,
+                hovertemplate="%{text}<br>No data<extra></extra>",
+                showlegend=False,
+            )
+        )
+
+    if not data_df.empty:
+        data_labels = data_df["country_name"] if "country_name" in data_df.columns else data_df[input_id]
+        color_min, color_max = color_range if color_range else (None, None)
+        choropleth.add_trace(
+            go.Choropleth(
+                locations=data_df[input_id],
+                locationmode="ISO-3",
+                z=data_df[input_column],
+                text=data_labels,
+                customdata=data_df[input_id],
+                colorscale=color_theme,
+                zmin=color_min,
+                zmax=color_max,
+                colorbar=dict(title=input_label),
+                hovertemplate="%{text}<br>" + input_label + ": %{z}<extra></extra>",
+                marker_line_color="#ffffff",
+                marker_line_width=0.5,
+                showscale=True,
+            )
+        )
+
     if selected_countries:
         selected_points = [
             point_index
-            for point_index, country_code in enumerate(df[input_id])
+            for point_index, country_code in enumerate(data_df[input_id])
             if country_code in selected_countries
         ]
-        choropleth.update_traces(
-            selectedpoints=selected_points,
-            selected=dict(marker=dict(opacity=1)),
-            unselected=dict(marker=dict(opacity=0.25)),
-        )
+        if not data_df.empty:
+            choropleth.data[-1].update(
+                selectedpoints=selected_points,
+                selected=dict(marker=dict(opacity=1)),
+                unselected=dict(marker=dict(opacity=0.25)),
+            )
+        selected_df = data_df[data_df[input_id].isin(selected_countries)]
+        if not selected_df.empty:
+            selected_labels = selected_df["country_name"] if "country_name" in selected_df.columns else selected_df[input_id]
+            choropleth.add_trace(
+                go.Choropleth(
+                    locations=selected_df[input_id],
+                    locationmode="ISO-3",
+                    z=[0] * len(selected_df),
+                    text=selected_labels,
+                    customdata=selected_df[input_id],
+                    colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
+                    showscale=False,
+                    marker_line_color="#111111",
+                    marker_line_width=3,
+                    hoverinfo="skip",
+                    showlegend=False,
+                )
+            )
 
     if st.context.theme.type == "light":
         choropleth.update_layout(
