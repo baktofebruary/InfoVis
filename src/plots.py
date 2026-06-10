@@ -256,6 +256,62 @@ def make_heatmap(input_df, input_y, input_x, input_color, color_theme):
         )
     return heatmap
 
+def make_housing_burden_category_heatmap(df):
+    category_order = ["Low", "Medium", "High"]
+    category_colors = {
+        "Low": "#2ca25f",
+        "Medium": "#feb24c",
+        "High": "#de2d26",
+    }
+    heatmap_df = df.sort_values(["country_name", "year"]).copy()
+    heatmap_df["housing_burden_category"] = pd.Categorical(
+        heatmap_df["housing_burden_category"],
+        categories=category_order,
+        ordered=True,
+    )
+
+    heatmap = px.scatter(
+        heatmap_df,
+        x="year",
+        y="country_name",
+        color="housing_burden_category",
+        color_discrete_map=category_colors,
+        category_orders={
+            "housing_burden_category": category_order,
+            "year": sorted(heatmap_df["year"].unique()),
+            "country_name": sorted(heatmap_df["country_name"].unique(), reverse=True),
+        },
+        symbol_sequence=["square"],
+        hover_name="country_name",
+        hover_data={
+            "year": True,
+            "housing_burden_category": True,
+            "country_name": False,
+        },
+        labels={
+            "year": "Year",
+            "country_name": "Country",
+            "housing_burden_category": "Housing Burden",
+        },
+    )
+    heatmap.update_traces(marker=dict(size=18), selector=dict(mode="markers"))
+    heatmap.update_layout(
+        margin=dict(l=0, r=0, t=10, b=0),
+        legend=dict(
+            title="Housing Burden",
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+        ),
+        xaxis=dict(type="category", tickangle=0),
+        yaxis=dict(title="", automargin=True),
+        height=720,
+    )
+
+    return heatmap
+
 def make_lineplot(df, input_x, input_y, input_id):
     lineplot = px.line(
                 df,

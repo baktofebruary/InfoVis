@@ -37,6 +37,7 @@ collumn_list_full = set(df.columns)
 collumn_list_full.remove("year")
 collumn_list_full.remove("iso3")
 collumn_list_full.remove("country_name")
+collumn_list_full.remove("housing_burden_category")
 collumn_list = [
     "house_price_to_income_index",
     "housing_overburden",
@@ -142,6 +143,11 @@ elif not df_line1.empty or not df_line2.empty:
         st.plotly_chart(scatterplot)
 else:
     middle_container.info("Select countries on the map or the dropdown to see trends")
+
+heatmap_container = st.container(border=True)
+heatmap_container.header("Housing Burden Category by Country and Year")
+heatmap = ourplots.make_housing_burden_category_heatmap(df)
+heatmap_container.plotly_chart(heatmap, width="stretch")
 
 ac = st.container(border=True)
 ac.header("Animations")
