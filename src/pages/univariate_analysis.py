@@ -60,12 +60,13 @@ collumn_list_full.remove("year")
 collumn_list_full.remove("iso3")
 collumn_list_full.remove("country_name")
 collumn_list_full.remove("housing_burden_category")
-collumn_list = [
-    "house_price_to_income_index",
-    "housing_overburden",
-    "house_price_index",
-    "rent_price_index",
-]
+collumn_list_full = sorted(collumn_list_full, key=ourplots.format_column_label)
+# collumn_list = [
+#     "house_price_to_income_index",
+#     "housing_overburden",
+#     "house_price_index",
+#     "rent_price_index",
+# ]
 
 
 st.header("Group X, Cost of living Analysis")
@@ -79,10 +80,16 @@ with top_container:
     selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
 
     with control_cols[0]:
-        selected_var = st.selectbox('Select a variable', collumn_list, index=0)
+        selected_var = st.selectbox(
+            'Select a variable',
+            collumn_list_full,
+            index=0,
+            format_func=ourplots.format_column_label
+        )
+        selected_var_label = ourplots.format_column_label(selected_var)
 
     with control_cols[1]:
-        color_theme_list = ['greens', 'blues', 'cividis', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
+        color_theme_list = ['greens', 'blues', 'reds', 'cividis', 'inferno', 'magma', 'plasma', 'rainbow', 'turbo', 'viridis']
         selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
     with control_cols[2]:
@@ -141,7 +148,7 @@ with top_container:
     )
 
     bar_container = st.container(border=True)
-    bar_container.write(f"All countries by {selected_var.replace('_', ' ')} in {selected_year}")
+    bar_container.write(f"All countries by {selected_var_label} in {selected_year}")
     bar_chart = ourplots.make_country_bar_chart(
         df_year,
         "iso3",
@@ -185,7 +192,13 @@ elif not df_line1.empty or not df_line2.empty:
     with scatter_col:
         scatter_controls = st.columns((1, 1), gap='small')
         with scatter_controls[0]:
-            scatter_var_x = st.selectbox("Select Variable X", collumn_list_full, index=0, key="scatter_var_x")
+            scatter_var_x = st.selectbox(
+                "Select Variable X",
+                collumn_list_full,
+                index=0,
+                key="scatter_var_x",
+                format_func=ourplots.format_column_label
+            )
         with scatter_controls[1]:
             # scatter_var_y = st.selectbox("Select Variable Y", collumn_list, index=1, key="scatter_var_y")
             scatter_var_y = selected_var
@@ -203,14 +216,30 @@ else:
 heatmap_container = st.container(border=True)
 heatmap_container.header("Housing Burden Category by Country and Year")
 heatmap_col, pie_col = heatmap_container.columns((1.7, 1), gap='small')
+category_order, category_colors = ourplots.get_housing_burden_category_style(selected_color_theme)
 
 with heatmap_col:
-    heatmap = ourplots.make_housing_burden_category_heatmap(df, selected_year, highlighted_countries)
+    st.markdown(
+        f"""
+        <div style="display:flex; gap:16px; align-items:center; margin:0 0 8px 0; font-size:0.9rem;">
+            <span><span style="display:inline-block; width:12px; height:12px; background:{category_colors["Low"]}; margin-right:6px;"></span>L = Low</span>
+            <span><span style="display:inline-block; width:12px; height:12px; background:{category_colors["Medium"]}; margin-right:6px;"></span>M = Medium</span>
+            <span><span style="display:inline-block; width:12px; height:12px; background:{category_colors["High"]}; margin-right:6px;"></span>H = High</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    heatmap = ourplots.make_housing_burden_category_heatmap(
+        df,
+        selected_year,
+        highlighted_countries,
+        selected_color_theme
+    )
     st.plotly_chart(heatmap, width="stretch")
 
 with pie_col:
     # st.write(f"Housing Burden Categories in {selected_year}")
-    pie = ourplots.make_housing_burden_category_pie(df_year)
+    pie = ourplots.make_housing_burden_category_pie(df_year, selected_color_theme)
     st.plotly_chart(pie, width="stretch")
 
 # ac = st.container(border=True)
