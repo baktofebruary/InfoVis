@@ -117,7 +117,7 @@ with control_cols[2]:
 
 with control_cols[3]:
     selected_country_codes = st.multiselect(
-        "You can also select countries here",
+        "Select countries (max 5)",
         data_country_codes,
         max_selections=5,
         key="country_dropdown"
