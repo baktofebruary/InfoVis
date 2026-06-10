@@ -62,13 +62,13 @@ def make_country_bar_chart(df, input_id, input_column, color_theme, color_range=
             x=bar_df["country_name"],
             y=bar_df[input_column],
             customdata=bar_df[input_id],
-            marker=dict(
-                color=bar_df[input_column],
-                colorscale=color_theme,
-                cmin=color_range[0] if color_range else None,
-                cmax=color_range[1] if color_range else None,
-                colorbar=dict(title=input_column),
-            ),
+            # marker=dict(
+            #     color=bar_df[input_column],
+            #     colorscale=color_theme,
+            #     cmin=color_range[0] if color_range else None,
+            #     cmax=color_range[1] if color_range else None,
+            #     showscale=False,
+            # ),
             hovertemplate=(
                 "%{x}<br>"
                 "ISO3: %{customdata}<br>"

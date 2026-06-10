@@ -52,6 +52,7 @@ top_container = st.container(border=False)
 with top_container:
     controls_container = st.container(border=True)
     control_cols = controls_container.columns((1.4, 1.3, 1, 1, 2), gap='small')
+    selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
 
     with control_cols[0]:
         selected_var = st.selectbox('Select a variable', collumn_list, index=0)
@@ -61,7 +62,12 @@ with top_container:
         selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
     with control_cols[2]:
-        st.checkbox("Color blind mode")
+        if st.button("Reset selections"):
+            st.session_state["selected_countries_from_chart"] = []
+            st.session_state["country_dropdown"] = []
+            st.session_state["selected_year"] = int(max(year_list))
+            st.session_state["selection_reset_nonce"] = selection_reset_nonce + 1
+            st.rerun()
 
     with control_cols[3]:
         selected_year = st.slider(
@@ -69,14 +75,16 @@ with top_container:
             min_value=int(min(year_list)),
             max_value=int(max(year_list)),
             value=int(max(year_list)),
-            step=1
+            step=1,
+            key="selected_year"
         )
 
     with control_cols[4]:
         multisel_countries = st.multiselect(
             "You can also select countries here",
             df["iso3"].unique(),
-            max_selections=5
+            max_selections=5,
+            key="country_dropdown"
         )
 
     if multisel_countries:
@@ -105,7 +113,7 @@ with top_container:
         choropleth,
         width="stretch",
         height="stretch",
-        key="country_map_chart",
+        key=f"country_map_chart_{selection_reset_nonce}",
         on_select="rerun"
     )
 
@@ -122,7 +130,7 @@ with top_container:
     bar_event = bar_container.plotly_chart(
         bar_chart,
         width="stretch",
-        key="country_bar_chart",
+        key=f"country_bar_chart_{selection_reset_nonce}",
         on_select="rerun"
     )
 
@@ -190,18 +198,18 @@ with pie_col:
     pie = ourplots.make_housing_burden_category_pie(df_year)
     st.plotly_chart(pie, width="stretch")
 
-ac = st.container(border=True)
-ac.header("Animations")
-cols = ac.columns((1,3))
+# ac = st.container(border=True)
+# ac.header("Animations")
+# cols = ac.columns((1,3))
 
-#  with cols[0]:
-left_buttons = st.container(border=True)
-anim_var_x = left_buttons.selectbox("Select Variable X",collumn_list)
-anim_var_y = left_buttons.selectbox("Select Variable Y",collumn_list)
-# with cols[1]:
-right_plot = st.container(border=True)
-fig = ourplots.make_scatterplot_anim(df, anim_var_x, anim_var_y, "country_name")
-right_plot.plotly_chart(fig, width="stretch", height="stretch")
+# #  with cols[0]:
+# left_buttons = st.container(border=True)
+# anim_var_x = left_buttons.selectbox("Select Variable X",collumn_list)
+# anim_var_y = left_buttons.selectbox("Select Variable Y",collumn_list)
+# # with cols[1]:
+# right_plot = st.container(border=True)
+# fig = ourplots.make_scatterplot_anim(df, anim_var_x, anim_var_y, "country_name")
+# right_plot.plotly_chart(fig, width="stretch", height="stretch")
 
-st.header("Raw Data")
-st.dataframe(df)
+# st.header("Raw Data")
+# st.dataframe(df)
