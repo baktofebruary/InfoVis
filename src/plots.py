@@ -72,7 +72,7 @@ def make_choropleth(df, input_id, input_column, color_theme, color_range=None, s
 
     return choropleth
 
-def make_country_bar_chart(df, input_id, input_column, color_theme, color_range=None, selected_countries=None):
+def make_country_bar_chart(df, input_id, input_column, color_theme, selected_countries=None):
     selected_countries = selected_countries or []
     input_label = format_column_label(input_column)
     _, category_colors = get_housing_overburden_category_style(color_theme)

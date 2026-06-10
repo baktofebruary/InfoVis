@@ -1,11 +1,11 @@
 import streamlit as st
-import importlib
 from pathlib import Path
 import pandas as pd
 
 import preprocess as pp
 import plots as ourplots
 
+import importlib
 ourplots = importlib.reload(ourplots)
 
 data_path = Path(__file__).resolve().parent.parent.parent / "data/final_dataset_draft.csv"
@@ -67,12 +67,6 @@ column_list_full.remove("iso3")
 column_list_full.remove("country_name")
 column_list_full.remove("housing_burden_category")
 column_list_full = sorted(column_list_full, key=ourplots.format_column_label)
-# collumn_list = [
-#     "house_price_to_income_index",
-#     "housing_overburden",
-#     "house_price_index",
-#     "rent_price_index",
-# ]
 
 
 st.header("Group 43, Cost of living Analysis")
@@ -95,7 +89,7 @@ with top_container:
         selected_var_label = ourplots.format_column_label(selected_var)
 
     with control_cols[1]:
-        color_theme_list = ['greens', 'blues', 'reds', 'cividis', 'inferno', 'magma', 'plasma', 'rainbow', 'turbo', 'viridis']
+        color_theme_list = ['reds', 'greens', 'blues', 'cividis', 'inferno', 'magma', 'plasma', 'rainbow', 'turbo', 'viridis']
         selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
     with control_cols[2]:
@@ -154,7 +148,6 @@ with top_container:
         "iso3",
         selected_var,
         selected_color_theme,
-        color_range,
         highlighted_countries
     )
     bar_event = bar_container.plotly_chart(
@@ -209,7 +202,7 @@ else:
 heatmap_container = st.container(border=True)
 heatmap_container.header("Housing Overburden by Country and Year")
 heatmap_col, pie_col = heatmap_container.columns((1.7, 1), gap='small')
-category_order, category_colors = ourplots.get_housing_overburden_category_style(selected_color_theme)
+_, category_colors = ourplots.get_housing_overburden_category_style(selected_color_theme)
 
 with heatmap_col:
     st.markdown(
