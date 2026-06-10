@@ -16,7 +16,7 @@ VARIABLE_LABELS = {
     "mean_childbirth_age": "Mean Childbirth Age",
     "fertility_rate": "Fertility Rate",
     "rent_price_index": "Rent Price Index",
-    "housing_burden_category": "Housing Burden Category",
+    "housing_burden_category": "Housing Overburden Category",
     "iso3": "ISO3",
     "country_name": "Country",
 }

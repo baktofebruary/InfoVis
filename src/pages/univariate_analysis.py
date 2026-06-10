@@ -76,7 +76,7 @@ with top_container:
     apply_pending_country_toggle()
 
     controls_container = st.container(border=True)
-    control_cols = controls_container.columns((1.4, 1.3, 1, 1, 2), gap='small')
+    control_cols = controls_container.columns((1.4, 1.3, 1, 2, 1), gap='small')
     selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
 
     with control_cols[0]:
@@ -93,14 +93,6 @@ with top_container:
         selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
     with control_cols[2]:
-        if st.button("Reset selections"):
-            st.session_state["country_dropdown"] = []
-            st.session_state["pending_country_toggle"] = []
-            st.session_state["selected_year"] = int(max(year_list))
-            st.session_state["selection_reset_nonce"] = selection_reset_nonce + 1
-            st.rerun()
-
-    with control_cols[3]:
         selected_year = st.slider(
             "Year",
             min_value=int(min(year_list)),
@@ -110,13 +102,21 @@ with top_container:
             key="selected_year"
         )
 
-    with control_cols[4]:
+    with control_cols[3]:
         multisel_countries = st.multiselect(
             "You can also select countries here",
             df["iso3"].unique(),
             max_selections=5,
             key="country_dropdown"
         )
+
+    with control_cols[4]:
+        if st.button("Reset selections"):
+            st.session_state["country_dropdown"] = []
+            st.session_state["pending_country_toggle"] = []
+            st.session_state["selected_year"] = int(max(year_list))
+            st.session_state["selection_reset_nonce"] = selection_reset_nonce + 1
+            st.rerun()
 
     if multisel_countries:
         df_line1 = df[
@@ -214,7 +214,7 @@ else:
     middle_container.info("Select countries on the map or the dropdown to see trends")
 
 heatmap_container = st.container(border=True)
-heatmap_container.header("Housing Burden Category by Country and Year")
+heatmap_container.header("Housing Overburden Category by Country and Year")
 heatmap_col, pie_col = heatmap_container.columns((1.7, 1), gap='small')
 category_order, category_colors = ourplots.get_housing_burden_category_style(selected_color_theme)
 
@@ -238,7 +238,14 @@ with heatmap_col:
     st.plotly_chart(heatmap, width="stretch")
 
 with pie_col:
-    # st.write(f"Housing Burden Categories in {selected_year}")
+    st.markdown(
+        f"""
+        <div style="display:flex; align-items:center; margin:0 0 8px 0; font-size:0.9rem;">
+            <span>Housing Overburden Categories in <b>{selected_year}</b></span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     pie = ourplots.make_housing_burden_category_pie(df_year, selected_color_theme)
     st.plotly_chart(pie, width="stretch")
 
