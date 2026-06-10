@@ -1,6 +1,7 @@
 streamlit
-streamlit-extras
 pandas
 numpy
 plotly
 altair
+seaborn
+matplotlib

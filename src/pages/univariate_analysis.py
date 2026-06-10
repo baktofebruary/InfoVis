@@ -69,7 +69,7 @@ collumn_list_full = sorted(collumn_list_full, key=ourplots.format_column_label)
 # ]
 
 
-st.header("Group X, Cost of living Analysis")
+st.header("Group 43, Cost of living Analysis")
 top_container = st.container(border=False)
 
 with top_container:
