@@ -1,4 +1,4 @@
-# Group 43, InfoVis Projects
+# Group 43, InfoVis Project
 
 ## Requirements (Not strict but we can't verify reproducibility)
 - `Python 3.14.5`
