@@ -2,7 +2,7 @@
 
 ## Requirements (Not strict but we can't verify reproducibility)
 - `Python 3.14.5`
-- The libraries in `requirements.txt`
+- The libraries are in `requirements.txt`
 
 ## How to run
 - Create a virtual environment\

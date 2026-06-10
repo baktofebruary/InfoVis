@@ -61,12 +61,12 @@ def reset_selections(default_year):
     st.session_state["selection_reset_nonce"] = st.session_state.get("selection_reset_nonce", 0) + 1
 
 year_list = sorted(df.year.unique())
-collumn_list_full = set(df.columns)
-collumn_list_full.remove("year")
-collumn_list_full.remove("iso3")
-collumn_list_full.remove("country_name")
-collumn_list_full.remove("housing_burden_category")
-collumn_list_full = sorted(collumn_list_full, key=ourplots.format_column_label)
+column_list_full = set(df.columns)
+column_list_full.remove("year")
+column_list_full.remove("iso3")
+column_list_full.remove("country_name")
+column_list_full.remove("housing_burden_category")
+column_list_full = sorted(column_list_full, key=ourplots.format_column_label)
 # collumn_list = [
 #     "house_price_to_income_index",
 #     "housing_overburden",
@@ -88,7 +88,7 @@ with top_container:
     with control_cols[0]:
         selected_var = st.selectbox(
             'Select a variable',
-            collumn_list_full,
+            column_list_full,
             index=0,
             format_func=ourplots.format_column_label
         )
@@ -123,12 +123,7 @@ with top_container:
             args=(max(year_list),)
         )
 
-    if multisel_countries:
-        df_line1 = df[
-            df["iso3"].isin(multisel_countries)
-        ]
-    else:
-        df_line1 = pd.DataFrame()
+    df_selected_countries = df[df["iso3"].isin(multisel_countries)]
 
     df_year = df[df["year"] == selected_year]
     color_range = (df[selected_var].min(), df[selected_var].max())
@@ -176,16 +171,11 @@ with top_container:
     if toggled_countries:
         queue_country_toggle(toggled_countries)
 
-    df_line2 = pd.DataFrame()
-
 middle_container = st.container(border=True)
 df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
 df_average_line["country_name"] = "Average (all countries)"
 
-if not df_line1.empty and not df_line2.empty:
-    middle_container.info("Please only select countries either from the drop-down menu or the map.")
-elif not df_line1.empty or not df_line2.empty:
-    df_selected_countries = df_line1 if not df_line1.empty else df_line2
+if not df_selected_countries.empty:
     line_col, scatter_col = middle_container.columns((1, 1), gap='small')
 
     with line_col:
@@ -193,20 +183,18 @@ elif not df_line1.empty or not df_line2.empty:
         lineplot = ourplots.make_lineplot(df_lineplot, "year", selected_var, "country_name")
         st.plotly_chart(lineplot)
 
-#TODO later fix the variable selection
     with scatter_col:
         scatter_controls = st.columns((1, 1), gap='small')
         with scatter_controls[0]:
             scatter_var_x = st.selectbox(
                 "Select Variable X",
-                collumn_list_full,
+                column_list_full,
                 index=0,
                 key="scatter_var_x",
                 format_func=ourplots.format_column_label
             )
-        with scatter_controls[1]:
-            # scatter_var_y = st.selectbox("Select Variable Y", collumn_list, index=1, key="scatter_var_y")
-            scatter_var_y = selected_var
+        
+        scatter_var_y = selected_var
 
         scatterplot = ourplots.make_scatterplot(
             df_selected_countries,
@@ -216,12 +204,12 @@ elif not df_line1.empty or not df_line2.empty:
         )
         st.plotly_chart(scatterplot)
 else:
-    middle_container.info("Select countries on the map or the dropdown to see trends")
+    middle_container.info("Select countries on the map, bar chart, or dropdown to see trends")
 
 heatmap_container = st.container(border=True)
-heatmap_container.header("Housing Overburden Category by Country and Year")
+heatmap_container.header("Housing Overburden by Country and Year")
 heatmap_col, pie_col = heatmap_container.columns((1.7, 1), gap='small')
-category_order, category_colors = ourplots.get_housing_burden_category_style(selected_color_theme)
+category_order, category_colors = ourplots.get_housing_overburden_category_style(selected_color_theme)
 
 with heatmap_col:
     st.markdown(
