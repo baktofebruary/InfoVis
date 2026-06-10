@@ -54,6 +54,12 @@ def queue_country_toggle(country_codes):
     st.session_state["selection_reset_nonce"] = st.session_state.get("selection_reset_nonce", 0) + 1
     st.rerun()
 
+def reset_selections(default_year):
+    st.session_state["country_dropdown"] = []
+    st.session_state["pending_country_toggle"] = []
+    st.session_state["selected_year"] = int(default_year)
+    st.session_state["selection_reset_nonce"] = st.session_state.get("selection_reset_nonce", 0) + 1
+
 year_list = sorted(df.year.unique())
 collumn_list_full = set(df.columns)
 collumn_list_full.remove("year")
@@ -111,12 +117,11 @@ with top_container:
         )
 
     with control_cols[4]:
-        if st.button("Reset selections"):
-            st.session_state["country_dropdown"] = []
-            st.session_state["pending_country_toggle"] = []
-            st.session_state["selected_year"] = int(max(year_list))
-            st.session_state["selection_reset_nonce"] = selection_reset_nonce + 1
-            st.rerun()
+        st.button(
+            "Reset selections",
+            on_click=reset_selections,
+            args=(max(year_list),)
+        )
 
     if multisel_countries:
         df_line1 = df[
