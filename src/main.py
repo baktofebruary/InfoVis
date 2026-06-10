@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title='Housing affordability dashboard',
+    page_title='Housing Affordability Across European Countries',
     page_icon="🏠",
     layout="wide",
     initial_sidebar_state="expanded")
