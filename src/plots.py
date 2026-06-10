@@ -23,7 +23,6 @@ VARIABLE_LABELS = {
 def format_column_label(column_name):
     return VARIABLE_LABELS.get(str(column_name), str(column_name).replace("_", " ").title())
 
-# PAGE 1
 def make_choropleth(df, input_id, input_column, color_theme, color_range=None, selected_countries=None):
     selected_countries = selected_countries or []
     input_label = format_column_label(input_column)
@@ -143,7 +142,7 @@ def get_housing_overburden_category_style(color_theme=None):
 
     return category_order, fallback_colors
 
-def make_housing_burden_category_heatmap(df, selected_year=None, selected_countries=None, color_theme=None):
+def make_housing_overburden_category_heatmap(df, selected_year=None, selected_countries=None, color_theme=None):
     selected_countries = selected_countries or []
     category_order, category_colors = get_housing_overburden_category_style(color_theme)
     heatmap_df = df.sort_values(["country_name", "year"]).copy()

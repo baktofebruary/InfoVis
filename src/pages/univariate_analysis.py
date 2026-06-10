@@ -70,106 +70,105 @@ column_list_full = sorted(column_list_full, key=ourplots.format_column_label)
 
 
 st.header("Group 43, Cost of living Analysis")
-top_container = st.container(border=False)
 
-with top_container:
-    apply_pending_country_toggle()
+apply_pending_country_toggle()
 
-    controls_container = st.container(border=True)
-    control_cols = controls_container.columns((1.4, 1.3, 1, 2, 1), gap='small')
-    selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
+top_container = st.container(border=True)
+control_cols = top_container.columns((1.4, 1.3, 1, 2, 1), gap='small')
+selection_reset_nonce = st.session_state.get("selection_reset_nonce", 0)
 
-    with control_cols[0]:
-        selected_var = st.selectbox(
-            'Select a variable',
-            column_list_full,
-            index=0,
-            format_func=ourplots.format_column_label
-        )
-        selected_var_label = ourplots.format_column_label(selected_var)
-
-    with control_cols[1]:
-        color_theme_list = ['reds', 'greens', 'blues', 'cividis', 'inferno', 'magma', 'plasma', 'rainbow', 'turbo', 'viridis']
-        selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
-
-    with control_cols[2]:
-        selected_year = st.slider(
-            "Year",
-            min_value=int(min(year_list)),
-            max_value=int(max(year_list)),
-            value=int(max(year_list)),
-            step=1,
-            key="selected_year"
-        )
-
-    with control_cols[3]:
-        multisel_countries = st.multiselect(
-            "You can also select countries here",
-            df["iso3"].unique(),
-            max_selections=5,
-            key="country_dropdown"
-        )
-
-    with control_cols[4]:
-        st.button(
-            "Reset selections",
-            on_click=reset_selections,
-            args=(max(year_list),)
-        )
-
-    df_selected_countries = df[df["iso3"].isin(multisel_countries)]
-
-    df_year = df[df["year"] == selected_year]
-    color_range = (df[selected_var].min(), df[selected_var].max())
-    highlighted_countries = multisel_countries
-
-    map_container = st.container(border=True, horizontal_alignment="right")
-    map_container.write(f"Select a country on the map! Year: {selected_year}")
-    choropleth = ourplots.make_choropleth(
-        df_year,
-        "iso3",
-        selected_var,
-        selected_color_theme,
-        color_range,
-        highlighted_countries
+with control_cols[0]:
+    selected_var = st.selectbox(
+        'Select a variable',
+        column_list_full,
+        index=0,
+        format_func=ourplots.format_column_label
     )
-    map_event = map_container.plotly_chart(
-        choropleth,
-        width="stretch",
-        height="stretch",
-        key=f"country_map_chart_{selection_reset_nonce}",
-        on_select="rerun"
+    selected_var_label = ourplots.format_column_label(selected_var)
+
+with control_cols[1]:
+    color_theme_list = ['reds', 'greens', 'blues', 'cividis', 'inferno', 'magma', 'plasma', 'rainbow', 'turbo', 'viridis']
+    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
+
+with control_cols[2]:
+    selected_year = st.slider(
+        "Year",
+        min_value=int(min(year_list)),
+        max_value=int(max(year_list)),
+        value=int(max(year_list)),
+        step=1,
+        key="selected_year"
     )
 
-    bar_container = st.container(border=True)
-    bar_container.write(f"All countries by {selected_var_label} in {selected_year}")
-    bar_chart = ourplots.make_country_bar_chart(
-        df_year,
-        "iso3",
-        selected_var,
-        selected_color_theme,
-        highlighted_countries
-    )
-    bar_event = bar_container.plotly_chart(
-        bar_chart,
-        width="stretch",
-        key=f"country_bar_chart_{selection_reset_nonce}",
-        on_select="rerun"
+with control_cols[3]:
+    multisel_countries = st.multiselect(
+        "You can also select countries here",
+        df["iso3"].unique(),
+        max_selections=5,
+        key="country_dropdown"
     )
 
-    map_selected_countries = get_selected_country_codes(map_event)
-    bar_selected_countries = get_selected_country_codes(bar_event)
-    toggled_countries = list(dict.fromkeys(map_selected_countries + bar_selected_countries))
+with control_cols[4]:
+    st.button(
+        "Reset selections",
+        on_click=reset_selections,
+        args=(max(year_list),)
+    )
 
-    if toggled_countries:
-        queue_country_toggle(toggled_countries)
+df_selected_countries = df[df["iso3"].isin(multisel_countries)]
+
+df_year = df[df["year"] == selected_year]
+color_range = (df[selected_var].min(), df[selected_var].max())
+highlighted_countries = multisel_countries
+
+map_container = st.container(border=True, horizontal_alignment="right")
+map_container.write(f"Select a country on the map! Year: {selected_year}")
+choropleth = ourplots.make_choropleth(
+    df_year,
+    "iso3",
+    selected_var,
+    selected_color_theme,
+    color_range,
+    highlighted_countries
+)
+map_event = map_container.plotly_chart(
+    choropleth,
+    width="stretch",
+    height="stretch",
+    key=f"country_map_chart_{selection_reset_nonce}",
+    on_select="rerun"
+)
+
+bar_container = st.container(border=True)
+bar_container.write(f"All countries by {selected_var_label} in {selected_year}")
+bar_chart = ourplots.make_country_bar_chart(
+    df_year,
+    "iso3",
+    selected_var,
+    selected_color_theme,
+    highlighted_countries
+)
+bar_event = bar_container.plotly_chart(
+    bar_chart,
+    width="stretch",
+    key=f"country_bar_chart_{selection_reset_nonce}",
+    on_select="rerun"
+)
+
+map_selected_countries = get_selected_country_codes(map_event)
+bar_selected_countries = get_selected_country_codes(bar_event)
+toggled_countries = list(dict.fromkeys(map_selected_countries + bar_selected_countries))
+
+if toggled_countries:
+    queue_country_toggle(toggled_countries)
 
 middle_container = st.container(border=True)
-df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
-df_average_line["country_name"] = "Average (all countries)"
 
 if not df_selected_countries.empty:
     line_col, scatter_col = middle_container.columns((1, 1), gap='small')
+    
+    df_average_line = df.groupby("year", as_index=False, sort=False)[selected_var].mean()
+    df_average_line["country_name"] = "Average (all countries)"
 
     with line_col:
         df_lineplot = pd.concat([df_selected_countries, df_average_line], ignore_index=True)
@@ -215,7 +214,7 @@ with heatmap_col:
         """,
         unsafe_allow_html=True
     )
-    heatmap = ourplots.make_housing_burden_category_heatmap(
+    heatmap = ourplots.make_housing_overburden_category_heatmap(
         df,
         selected_year,
         highlighted_countries,
