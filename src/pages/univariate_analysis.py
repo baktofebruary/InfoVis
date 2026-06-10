@@ -248,19 +248,3 @@ with pie_col:
     )
     pie = ourplots.make_housing_burden_category_pie(df_year, selected_color_theme)
     st.plotly_chart(pie, width="stretch")
-
-# ac = st.container(border=True)
-# ac.header("Animations")
-# cols = ac.columns((1,3))
-
-# #  with cols[0]:
-# left_buttons = st.container(border=True)
-# anim_var_x = left_buttons.selectbox("Select Variable X",collumn_list)
-# anim_var_y = left_buttons.selectbox("Select Variable Y",collumn_list)
-# # with cols[1]:
-# right_plot = st.container(border=True)
-# fig = ourplots.make_scatterplot_anim(df, anim_var_x, anim_var_y, "country_name")
-# right_plot.plotly_chart(fig, width="stretch", height="stretch")
-
-# st.header("Raw Data")
-# st.dataframe(df)
