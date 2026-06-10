@@ -1,8 +1,5 @@
 import streamlit as st
 
-def page2():
-    pass
-
 st.set_page_config(
     page_title='Cost of living Dashboard',
     page_icon="🏂",

@@ -1,4 +1,3 @@
-from pathlib import Path
 import pandas as pd
 
 def iso2_to_iso3(df_to_merge:pd.DataFrame)->pd.DataFrame:
