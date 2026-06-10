@@ -261,7 +261,7 @@ def make_housing_overburden_category_heatmap(df, selected_year=None, selected_co
             y1=len(countries) - 0.5,
             xref="x",
             yref="y",
-            line=dict(color="#111111", width=3),
+            line=dict(color="#111111", width=6),
             fillcolor="rgba(0,0,0,0)",
         )
 
@@ -281,7 +281,7 @@ def make_housing_overburden_category_heatmap(df, selected_year=None, selected_co
                 y1=country_index + 0.5,
                 xref="x",
                 yref="y",
-                line=dict(color="#111111", width=3),
+                line=dict(color="#111111", width=6),
                 fillcolor="rgba(0,0,0,0)",
             )
 

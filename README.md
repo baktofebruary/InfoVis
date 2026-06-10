@@ -13,6 +13,8 @@ In this project, we tried to analize how housing costs have changed during the l
 - Activate the created environment
     - `.\venv\Scripts\activate` For Windows
     - `source ./venv/bin/activate` For GNU/Linux
+- Install libraries
+    - `pip install -r requirements.txt`
 
 ## Run the App
 - From the project directory\
