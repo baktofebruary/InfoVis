@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="expanded")
 
 pg = st.navigation([
-    st.Page("pages/univariate_analysis.py", title="Homepage")
+    st.Page("pages/streamlit_app.py", title="Homepage")
 ])
 
 pg.run()
