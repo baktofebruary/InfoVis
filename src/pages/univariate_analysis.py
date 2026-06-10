@@ -69,7 +69,7 @@ column_list_full.remove("housing_burden_category")
 column_list_full = sorted(column_list_full, key=ourplots.format_column_label)
 
 
-st.header("Group 43, Cost of living Analysis")
+st.header("Group 43, Housing Affordability Analysis")
 
 apply_pending_country_toggle()
 
